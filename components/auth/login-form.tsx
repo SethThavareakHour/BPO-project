@@ -129,20 +129,20 @@ export function LoginForm() {
 
   // ── Render ─────────────────────────────────────────────────────────────
   return (
-    <Card className="w-full shadow-md">
-      <CardHeader className="space-y-1 pb-4">
-        <CardTitle className="text-2xl font-bold tracking-tight">
+    <Card className="w-full border-0 shadow-lg rounded-2xl bg-white">
+      <CardHeader className="space-y-1 pb-4 px-8 pt-8">
+        <CardTitle className="text-2xl font-bold tracking-tight text-gray-900">
           Sign in
         </CardTitle>
-        <CardDescription>
+        <CardDescription className="text-gray-400">
           Enter your advisor account credentials to continue
         </CardDescription>
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="px-8">
         {/* URL-level error (e.g. unverified email from NextAuth) */}
         {urlErrorMessage && (
-          <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {urlErrorMessage}
           </div>
         )}
@@ -162,7 +162,7 @@ export function LoginForm() {
               disabled={isLoading}
               aria-invalid={!!fieldErrors.email}
               aria-describedby={fieldErrors.email ? "email-error" : undefined}
-              className={fieldErrors.email ? "border-red-400 focus-visible:ring-red-400" : ""}
+              className={`rounded-xl ${fieldErrors.email ? "border-red-400 focus-visible:ring-red-400" : ""}`}
             />
             {fieldErrors.email && (
               <p id="email-error" className="text-xs text-red-600">
@@ -177,7 +177,7 @@ export function LoginForm() {
               <Label htmlFor="password">Password</Label>
               <Link
                 href="/forgot-password"
-                className="text-xs text-indigo-600 hover:text-indigo-700 hover:underline"
+                className="text-xs text-blue-600 hover:text-blue-700 hover:underline"
                 tabIndex={isLoading ? -1 : 0}
               >
                 Forgot password?
@@ -197,17 +197,16 @@ export function LoginForm() {
                 aria-describedby={
                   fieldErrors.password ? "password-error" : undefined
                 }
-                className={
-                  fieldErrors.password
+                className={`rounded-xl ${fieldErrors.password
                     ? "border-red-400 pr-10 focus-visible:ring-red-400"
                     : "pr-10"
-                }
+                  }`}
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((v) => !v)}
                 disabled={isLoading}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 focus:outline-none transition-colors"
                 aria-label={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? (
@@ -228,7 +227,7 @@ export function LoginForm() {
           <Button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
+            className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-xl h-11"
           >
             {isLoading ? (
               <>
@@ -245,12 +244,12 @@ export function LoginForm() {
         </form>
       </CardContent>
 
-      <CardFooter className="flex justify-center border-t pt-4">
-        <p className="text-sm text-gray-500">
+      <CardFooter className="flex justify-center border-t border-gray-50 pt-5 pb-6 mx-8">
+        <p className="text-sm text-gray-400">
           Don&apos;t have an account?{" "}
           <Link
             href="/register"
-            className="font-medium text-indigo-600 hover:text-indigo-700 hover:underline"
+            className="font-medium text-blue-600 hover:text-blue-700 hover:underline"
           >
             Create one
           </Link>

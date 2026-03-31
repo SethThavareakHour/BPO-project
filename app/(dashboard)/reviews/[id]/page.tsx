@@ -487,7 +487,7 @@ function FeedbackSection({
                 size="sm"
                 onClick={handleSaveManual}
                 disabled={isLoading || manualText.trim().length < 10}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white gap-1.5"
+                className="bg-gray-900 hover:bg-gray-800 text-white gap-1.5 rounded-xl"
               >
                 {isLoading ? (
                   <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -612,7 +612,7 @@ function ApproveDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg rounded-2xl">
         <DialogHeader>
           <DialogTitle className="text-lg font-semibold text-gray-900">
             Approve document
@@ -701,7 +701,7 @@ function ApproveDialog({
 // ─────────────────────────────────────────────
 function ReviewDetailSkeleton() {
   return (
-    <div className="px-6 py-8 max-w-4xl mx-auto w-full space-y-6">
+    <div className="px-8 py-8 max-w-4xl mx-auto w-full space-y-6 animate-fade-in-up">
       <Skeleton className="h-4 w-36" />
       <div className="flex items-start gap-5">
         <Skeleton className="h-20 w-20 rounded-full shrink-0" />
@@ -815,7 +815,7 @@ export default function ReviewDetailPage() {
     !review.isApproved && !!review.feedback && review.feedback.trim().length > 0
 
   return (
-    <div className="px-6 py-8 max-w-4xl mx-auto w-full space-y-6">
+    <div className="px-8 py-8 max-w-4xl mx-auto w-full space-y-6 animate-fade-in-up">
       {/* ── Breadcrumb ──────────────────────────────────────────── */}
       <div className="flex items-center gap-2 text-sm text-gray-500">
         <Link
@@ -863,7 +863,7 @@ export default function ReviewDetailPage() {
                 Approved
                 {review.approvedAt && (
                   <span className="text-green-500">
-                    · {formatDate(review.approvedAt)}
+                    · <span suppressHydrationWarning>{formatDate(review.approvedAt)}</span>
                   </span>
                 )}
               </Badge>
@@ -913,7 +913,7 @@ export default function ReviewDetailPage() {
             )}
 
             <span className="text-gray-400">
-              Reviewed {formatDateTime(review.createdAt)}
+              Reviewed <span suppressHydrationWarning>{formatDateTime(review.createdAt)}</span>
             </span>
           </div>
         </div>
@@ -992,7 +992,7 @@ export default function ReviewDetailPage() {
             {report.summary}
           </p>
           <p className="mt-2 text-xs text-indigo-500">
-            Generated at {formatDateTime(report.generatedAt)}
+            Generated at <span suppressHydrationWarning>{formatDateTime(report.generatedAt)}</span>
           </p>
         </div>
       </div>

@@ -289,7 +289,7 @@ function AddStudentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md rounded-2xl">
         <DialogHeader>
           <DialogTitle>Add student</DialogTitle>
           <DialogDescription>
@@ -368,7 +368,7 @@ function AddStudentDialog({
             <Button
               type="submit"
               disabled={isLoading}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white min-w-[100px]"
+              className="bg-gray-900 hover:bg-gray-800 text-white min-w-[100px] rounded-xl"
             >
               {isLoading ? (
                 <>
@@ -491,7 +491,7 @@ function EditProjectDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg rounded-2xl">
         <DialogHeader>
           <DialogTitle>Edit project</DialogTitle>
           <DialogDescription>
@@ -567,7 +567,7 @@ function EditProjectDialog({
             <Button
               type="submit"
               disabled={isLoading}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white min-w-[100px]"
+              className="bg-gray-900 hover:bg-gray-800 text-white min-w-[100px] rounded-xl"
             >
               {isLoading ? (
                 <>
@@ -641,7 +641,7 @@ function StudentsTab({
         <Button
           size="sm"
           onClick={() => setAddOpen(true)}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white"
+          className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl"
         >
           <Plus className="mr-1.5 h-3.5 w-3.5" />
           Add student
@@ -649,7 +649,7 @@ function StudentsTab({
       </div>
 
       {students.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 py-14 text-center">
+        <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-white py-14 text-center">
           <Users className="mb-3 h-10 w-10 text-gray-300" />
           <p className="text-sm font-medium text-gray-600">No students yet</p>
           <p className="mt-1 text-xs text-gray-400">
@@ -659,7 +659,7 @@ function StudentsTab({
           <Button
             size="sm"
             variant="outline"
-            className="mt-4 border-indigo-200 text-indigo-600 hover:bg-indigo-50"
+            className="mt-4 border-blue-200 text-blue-600 hover:bg-blue-50 rounded-xl"
             onClick={() => setAddOpen(true)}
           >
             <Plus className="mr-1.5 h-3.5 w-3.5" />
@@ -701,7 +701,7 @@ function StudentsTab({
                     )}
                   </TableCell>
                   <TableCell className="text-gray-400 text-xs">
-                    {formatDate(student.createdAt)}
+                    <span suppressHydrationWarning>{formatDate(student.createdAt)}</span>
                   </TableCell>
                   <TableCell>
                     <Button
@@ -892,7 +892,7 @@ function DocumentsTab({
 
       {/* Documents table */}
       {filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 py-14 text-center">
+        <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-white py-14 text-center">
           <FileText className="mb-3 h-10 w-10 text-gray-300" />
           <p className="text-sm font-medium text-gray-600">
             No documents found
@@ -965,7 +965,7 @@ function DocumentsTab({
                   </TableCell>
 
                   <TableCell className="text-xs text-gray-400">
-                    {formatDateTime(doc.createdAt)}
+                    <span suppressHydrationWarning>{formatDateTime(doc.createdAt)}</span>
                   </TableCell>
 
                   <TableCell className="text-right">
@@ -974,6 +974,7 @@ function DocumentsTab({
                       {doc.review && (
                         <Button
                           render={<Link href={`/reviews/${doc.review.id}`} />}
+                          nativeButton={false}
                           variant="ghost"
                           size="sm"
                           className="h-7 px-2 text-xs text-indigo-600 hover:bg-indigo-50"
@@ -1070,7 +1071,7 @@ export default function ProjectDetailPage() {
   // ── Loading skeleton ─────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <div className="px-6 py-8 max-w-7xl mx-auto w-full space-y-6">
+      <div className="px-8 py-8 max-w-7xl mx-auto w-full space-y-6 animate-fade-in-up">
         {/* Breadcrumb skeleton */}
         <Skeleton className="h-4 w-40" />
 
@@ -1110,11 +1111,11 @@ export default function ProjectDetailPage() {
   ).length;
 
   return (
-    <div className="px-6 py-8 max-w-7xl mx-auto w-full space-y-6">
+    <div className="px-8 py-8 max-w-7xl mx-auto w-full space-y-6 animate-fade-in-up">
       {/* ── Breadcrumb ────────────────────────────────────────────────── */}
       <Link
         href="/projects"
-        className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors"
+        className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 transition-colors"
       >
         <ArrowLeft className="h-3.5 w-3.5" />
         Back to projects
@@ -1127,7 +1128,7 @@ export default function ProjectDetailPage() {
             {project.name}
           </h1>
           {project.description ? (
-            <p className="mt-1 text-sm text-gray-500 max-w-2xl">
+            <p className="mt-1 text-sm text-gray-400 max-w-2xl">
               {project.description}
             </p>
           ) : (
@@ -1138,10 +1139,10 @@ export default function ProjectDetailPage() {
 
           {/* Drive folder indicator */}
           {project.driveFolderId ? (
-            <div className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50 px-2.5 py-1 text-xs text-indigo-700">
-              <div className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
+            <div className="mt-2 inline-flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs text-blue-700">
+              <div className="h-1.5 w-1.5 rounded-full bg-blue-500" />
               Drive folder connected
-              <span className="font-mono text-[10px] text-indigo-500">
+              <span className="font-mono text-[10px] text-blue-400">
                 ({project.driveFolderId.slice(0, 12)}…)
               </span>
             </div>
@@ -1157,7 +1158,7 @@ export default function ProjectDetailPage() {
           variant="outline"
           size="sm"
           onClick={() => setEditOpen(true)}
-          className="shrink-0 gap-1.5"
+          className="shrink-0 gap-1.5 rounded-xl border-gray-200 text-gray-500"
         >
           <Pencil className="h-3.5 w-3.5" />
           Edit project
@@ -1202,11 +1203,11 @@ export default function ProjectDetailPage() {
           return (
             <div
               key={stat.label}
-              className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3"
+              className="flex items-center gap-3 rounded-xl border-0 shadow-sm bg-white px-4 py-3"
             >
               <div
                 className={cn(
-                  "flex h-9 w-9 items-center justify-center rounded-lg shrink-0",
+                  "flex h-9 w-9 items-center justify-center rounded-xl shrink-0",
                   stat.bg,
                 )}
               >

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -17,6 +17,7 @@ import {
   Pencil,
   Trash2,
   FolderOpen,
+  Filter,
 } from "lucide-react";
 import { z } from "zod";
 
@@ -33,6 +34,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { FolderCard } from "@/components/dashboard/folder-card";
 import {
   Dialog,
   DialogContent,
@@ -67,7 +69,8 @@ interface ProjectEnriched {
     documents: number;
   };
   pendingCount: number;
-  approvedCount: number;
+  srsCount: number;
+  oppmCount: number;
 }
 
 // ─────────────────────────────────────────────
@@ -95,20 +98,20 @@ type FieldErrors = Partial<Record<keyof ProjectFormData, string>>;
 // ─────────────────────────────────────────────
 function EmptyState({ onCreateClick }: { onCreateClick: () => void }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-white py-20 text-center">
-      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-indigo-50">
-        <FolderKanban className="h-8 w-8 text-indigo-500" />
+    <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-white py-20 text-center animate-fade-in">
+      <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50">
+        <FolderKanban className="h-8 w-8 text-blue-500" />
       </div>
       <h3 className="mb-1 text-lg font-semibold text-gray-900">
         No projects yet
       </h3>
-      <p className="mb-6 max-w-xs text-sm text-gray-500">
+      <p className="mb-6 max-w-xs text-sm text-gray-400">
         Create your first project to start managing student SRS and OPPM
         documents.
       </p>
       <Button
         onClick={onCreateClick}
-        className="bg-indigo-600 hover:bg-indigo-700 text-white"
+        className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl px-5"
       >
         <Plus className="mr-2 h-4 w-4" />
         Create your first project
@@ -122,36 +125,25 @@ function EmptyState({ onCreateClick }: { onCreateClick: () => void }) {
 // ─────────────────────────────────────────────
 function ProjectCardSkeleton() {
   return (
-    <Card className="flex flex-col">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-2">
-          <Skeleton className="h-5 w-2/3" />
-          <Skeleton className="h-7 w-7 rounded-md" />
+    <div className="relative w-full h-[205px] rounded-[20px] overflow-hidden shadow-sm bg-gray-100">
+      <Skeleton className="absolute top-[20px] left-[14px] right-[14px] bottom-8 rounded-t-[12px] bg-white pt-3 px-4" />
+      <Skeleton className="absolute bottom-0 left-0 right-0 h-[78%] bg-blue-100" />
+      <div className="absolute top-[40%] left-0 right-0 bottom-0 z-20 px-5 pb-5 pt-1 flex flex-col justify-end gap-2">
+        <Skeleton className="h-4 w-1/2 bg-blue-300" />
+        <div className="space-y-2">
+          <Skeleton className="h-3 w-1/3 bg-blue-300 pb-0.5 border-b border-white/5" />
+          <Skeleton className="h-3 w-1/4 bg-blue-300 pb-0.5 border-b border-white/5" />
+          <Skeleton className="h-3 w-1/5 bg-blue-300" />
         </div>
-        <Skeleton className="h-3.5 w-full" />
-        <Skeleton className="h-3.5 w-4/5" />
-      </CardHeader>
-      <CardContent className="flex-1">
-        <div className="grid grid-cols-2 gap-3">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="rounded-lg bg-gray-50 p-3">
-              <Skeleton className="h-6 w-8 mb-1" />
-              <Skeleton className="h-3 w-16" />
-            </div>
-          ))}
-        </div>
-      </CardContent>
-      <CardFooter className="border-t pt-4">
-        <Skeleton className="h-3.5 w-28" />
-      </CardFooter>
-    </Card>
+      </div>
+    </div>
   );
 }
 
 // ─────────────────────────────────────────────
-// Project card
+// Project card — Folder Aesthetic (Dribbble Accurate)
 // ─────────────────────────────────────────────
-function ProjectCard({
+const ProjectCard = React.memo(function ProjectCard({
   project,
   onEdit,
   onDelete,
@@ -162,133 +154,71 @@ function ProjectCard({
 }) {
   const router = useRouter();
 
-  return (
-    <Card className="group flex flex-col transition-shadow hover:shadow-md">
-      <CardHeader className="pb-3">
-        <div className="flex items-start justify-between gap-2">
-          <Link href={`/projects/${project.id}`} className="min-w-0 flex-1">
-            <CardTitle className="truncate text-base font-semibold text-gray-900 group-hover:text-indigo-700 transition-colors">
-              {project.name}
-            </CardTitle>
-          </Link>
+  // White inner paper content
+  const InnerPaper = useMemo(() => (
+    <div className="h-full flex flex-col relative z-50">
+      <div className="flex justify-between items-start">
+        <div className="flex-1" />
 
-          {/* Actions menu */}
+        {/* Actions menu */}
+        <div onClick={(e) => e.stopPropagation()} className="ml-2 -mt-2 -mr-3">
           <DropdownMenu>
             <DropdownMenuTrigger
-              className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
-              aria-label="Project actions"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 focus:outline-none transition-colors"
             >
               <MoreVertical className="h-4 w-4" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44">
-              <DropdownMenuItem
-                className="cursor-pointer"
-                onClick={() => router.push(`/projects/${project.id}`)}
-              >
-                <FolderOpen className="mr-2 h-4 w-4" />
-                Open project
+            <DropdownMenuContent align="end" className="w-44 rounded-xl">
+              <DropdownMenuItem className="cursor-pointer rounded-lg" onClick={() => router.push(`/projects/${project.id}`)}>
+                <FolderOpen className="mr-2 h-4 w-4" /> Open project
               </DropdownMenuItem>
-              <DropdownMenuItem
-                className="cursor-pointer"
-                onClick={() => onEdit(project)}
-              >
-                <Pencil className="mr-2 h-4 w-4" />
-                Edit project
+              <DropdownMenuItem className="cursor-pointer rounded-lg" onClick={() => onEdit(project)}>
+                <Pencil className="mr-2 h-4 w-4" /> Edit project
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem
-                className="cursor-pointer text-red-600 focus:bg-red-50 focus:text-red-700"
-                onClick={() => onDelete(project)}
-              >
-                <Trash2 className="mr-2 h-4 w-4" />
-                Delete project
+              <DropdownMenuItem className="cursor-pointer text-red-600 focus:bg-red-50 focus:text-red-700 rounded-lg" onClick={() => onDelete(project)}>
+                <Trash2 className="mr-2 h-4 w-4" /> Delete project
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+      </div>
+    </div>
+  ), [project.description, project.id, onEdit, onDelete, router]);
 
-        {project.description ? (
-          <CardDescription className="line-clamp-2 text-xs leading-relaxed">
-            {project.description}
-          </CardDescription>
-        ) : (
-          <CardDescription className="text-xs italic text-gray-400">
-            No description provided
-          </CardDescription>
-        )}
-      </CardHeader>
-
-      <CardContent className="flex-1">
-        {/* Stats grid */}
-        <div className="grid grid-cols-2 gap-2.5">
-          <div className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2.5">
-            <Users className="h-4 w-4 shrink-0 text-violet-500" />
-            <div>
-              <p className="text-lg font-bold leading-none text-gray-900">
-                {project._count.students}
-              </p>
-              <p className="mt-0.5 text-[10px] text-gray-500">Students</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2.5">
-            <FileText className="h-4 w-4 shrink-0 text-indigo-500" />
-            <div>
-              <p className="text-lg font-bold leading-none text-gray-900">
-                {project._count.documents}
-              </p>
-              <p className="mt-0.5 text-[10px] text-gray-500">Documents</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 rounded-lg bg-amber-50 px-3 py-2.5">
-            <Clock className="h-4 w-4 shrink-0 text-amber-500" />
-            <div>
-              <p className="text-lg font-bold leading-none text-amber-700">
-                {project.pendingCount}
-              </p>
-              <p className="mt-0.5 text-[10px] text-amber-600">Pending</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 rounded-lg bg-green-50 px-3 py-2.5">
-            <CheckCircle2 className="h-4 w-4 shrink-0 text-green-500" />
-            <div>
-              <p className="text-lg font-bold leading-none text-green-700">
-                {project.approvedCount}
-              </p>
-              <p className="mt-0.5 text-[10px] text-green-600">Approved</p>
-            </div>
-          </div>
+  // Stats displayed on the blue front flap
+  const FrontStats = useMemo(() => (
+    <>
+      <div className="space-y-1">
+        <div className="flex justify-between items-center text-white/95 font-bold pb-1 border-b border-white/10 text-[10.5px]">
+          <span>{project.srsCount} SRS Documents</span>
         </div>
-
-        {/* Drive folder indicator */}
-        {project.driveFolderId && (
-          <div className="mt-3 flex items-center gap-1.5 rounded-md border border-indigo-100 bg-indigo-50 px-2.5 py-1.5">
-            <div className="h-1.5 w-1.5 rounded-full bg-indigo-500" />
-            <p className="text-[11px] text-indigo-700 font-medium">
-              Drive folder connected
-            </p>
-          </div>
-        )}
-      </CardContent>
-
-      <CardFooter className="border-t pt-3 pb-3">
-        <div className="flex w-full items-center justify-between">
-          <p className="text-[11px] text-gray-400">
-            Created {formatDate(project.createdAt)}
-          </p>
-          <Link
-            href={`/projects/${project.id}`}
-            className="text-[11px] font-medium text-indigo-600 hover:text-indigo-700 hover:underline"
-          >
-            View details →
-          </Link>
+        <div className="flex justify-between items-center text-white/95 font-bold pb-1 border-b border-white/10 text-[10.5px]">
+          <span>{project.oppmCount} OPPM Documents</span>
+          {project.pendingCount > 0 && (
+            <span className="text-[10px] bg-white text-blue-600 font-black px-1.5 py-0.5 rounded-full shadow-sm">
+              {project.pendingCount}
+            </span>
+          )}
         </div>
-      </CardFooter>
-    </Card>
+      </div>
+      <div className="flex justify-between items-center text-white/95 font-bold pt-1 text-[11px]">
+        <span>{project._count.students} Students</span>
+      </div>
+    </>
+  ), [project._count.students, project.srsCount, project.oppmCount, project.pendingCount]);
+
+  return (
+    <FolderCard
+      onClick={() => router.push(`/projects/${project.id}`)}
+      contentTitle={project.name}
+      contentStats={FrontStats}
+      isActive={true} // Default active to get the blue theme
+    >
+      {InnerPaper}
+    </FolderCard>
   );
-}
+});
 
 // ─────────────────────────────────────────────
 // Create / Edit project dialog
@@ -403,7 +333,7 @@ function ProjectFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg rounded-2xl">
         <DialogHeader>
           <DialogTitle className="text-lg font-semibold">
             {isEditing ? "Edit project" : "Create new project"}
@@ -429,6 +359,7 @@ function ProjectFormDialog({
               onChange={handleChange}
               disabled={isLoading}
               className={cn(
+                "rounded-xl",
                 fieldErrors.name && "border-red-400 focus-visible:ring-red-400",
               )}
             />
@@ -452,9 +383,9 @@ function ProjectFormDialog({
               disabled={isLoading}
               rows={3}
               className={cn(
-                "resize-none",
+                "resize-none rounded-xl",
                 fieldErrors.description &&
-                  "border-red-400 focus-visible:ring-red-400",
+                "border-red-400 focus-visible:ring-red-400",
               )}
             />
             <div className="flex items-center justify-between">
@@ -485,9 +416,9 @@ function ProjectFormDialog({
               onChange={handleChange}
               disabled={isLoading}
               className={cn(
-                "font-mono text-sm",
+                "font-mono text-sm rounded-xl",
                 fieldErrors.driveFolderId &&
-                  "border-red-400 focus-visible:ring-red-400",
+                "border-red-400 focus-visible:ring-red-400",
               )}
             />
             {fieldErrors.driveFolderId ? (
@@ -508,13 +439,14 @@ function ProjectFormDialog({
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={isLoading}
+              className="rounded-xl"
             >
               Cancel
             </Button>
             <Button
               type="submit"
               disabled={isLoading}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white min-w-[100px]"
+              className="bg-gray-900 hover:bg-gray-800 text-white min-w-[100px] rounded-xl"
             >
               {isLoading ? (
                 <>
@@ -577,7 +509,7 @@ function DeleteConfirmDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md rounded-2xl">
         <DialogHeader>
           <DialogTitle className="text-lg font-semibold text-gray-900">
             Delete project
@@ -597,6 +529,7 @@ function DeleteConfirmDialog({
             variant="outline"
             onClick={() => onOpenChange(false)}
             disabled={isLoading}
+            className="rounded-xl"
           >
             Cancel
           </Button>
@@ -604,7 +537,7 @@ function DeleteConfirmDialog({
             variant="destructive"
             onClick={handleDelete}
             disabled={isLoading}
-            className="min-w-[100px]"
+            className="min-w-[100px] rounded-xl"
           >
             {isLoading ? (
               <>
@@ -660,51 +593,49 @@ export default function ProjectsPage() {
   );
 
   return (
-    <div className="px-6 py-8 max-w-7xl mx-auto w-full space-y-6">
-      {/* ── Page header ──────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-            Projects
-          </h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Manage your student projects and linked Google Drive folders.
-          </p>
-        </div>
-
-        <Button
-          onClick={() => setCreateOpen(true)}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white shrink-0"
-        >
-          <Plus className="mr-2 h-4 w-4" />
-          New project
-        </Button>
+    <div className="px-8 py-8 max-w-7xl mx-auto w-full space-y-6 animate-fade-in-up">
+      {/* ── Page header (Subtle but Clear) ─────────────────────────── */}
+      <div className="flex items-center gap-2.5 text-gray-900">
+        <FolderKanban className="h-5 w-5" />
+        <span className="text-base font-black tracking-tight">
+          Student Projects
+        </span>
       </div>
 
-      {/* ── Search bar ───────────────────────────────────────────────── */}
+      {/* ── Action Bar (Search & Create) ─────────────────────────────── */}
       {(projects.length > 0 || isLoading) && (
-        <div className="relative max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-          <Input
-            placeholder="Search projects…"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
-          />
+        <div className="flex items-center justify-between gap-4">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-300" />
+            <Input
+              placeholder="Search projects…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10 rounded-xl border-gray-200 bg-white"
+            />
+          </div>
+
+          <Button
+            onClick={() => setCreateOpen(true)}
+            className="bg-gray-900 hover:bg-gray-800 text-white shrink-0 rounded-xl px-5"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            New project
+          </Button>
         </div>
       )}
 
       {/* ── Content ──────────────────────────────────────────────────── */}
       {isLoading ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, i) => (
             <ProjectCardSkeleton key={i} />
           ))}
         </div>
       ) : projects.length === 0 ? (
         <EmptyState onCreateClick={() => setCreateOpen(true)} />
       ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-white py-16 text-center">
+        <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-white py-16 text-center">
           <Search className="mb-3 h-10 w-10 text-gray-300" />
           <p className="text-sm font-medium text-gray-600">No projects found</p>
           <p className="mt-1 text-xs text-gray-400">
@@ -714,7 +645,7 @@ export default function ProjectsPage() {
           <Button
             variant="ghost"
             size="sm"
-            className="mt-3 text-indigo-600"
+            className="mt-3 text-blue-600"
             onClick={() => setSearchQuery("")}
           >
             Clear search
@@ -722,15 +653,15 @@ export default function ProjectsPage() {
         </div>
       ) : (
         <>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-400">
             Showing{" "}
-            <span className="font-medium text-gray-700">{filtered.length}</span>{" "}
+            <span className="font-medium text-gray-600">{filtered.length}</span>{" "}
             of{" "}
-            <span className="font-medium text-gray-700">{projects.length}</span>{" "}
+            <span className="font-medium text-gray-600">{projects.length}</span>{" "}
             project{projects.length !== 1 ? "s" : ""}
           </p>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {filtered.map((project) => (
               <ProjectCard
                 key={project.id}

@@ -89,7 +89,7 @@ function ScoreCircle({ score }: { score: number | null }) {
 
   const color =
     score >= 75
-      ? "text-green-600 bg-green-50 border-green-200"
+      ? "text-emerald-600 bg-emerald-50 border-emerald-200"
       : score >= 40
         ? "text-amber-600 bg-amber-50 border-amber-200"
         : "text-red-600 bg-red-50 border-red-200";
@@ -97,7 +97,7 @@ function ScoreCircle({ score }: { score: number | null }) {
   return (
     <div
       className={cn(
-        "flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 text-sm font-bold",
+        "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 text-sm font-bold",
         color,
       )}
       title={`Overall AI score: ${score}/100`}
@@ -113,20 +113,20 @@ function ScoreCircle({ score }: { score: number | null }) {
 function DocTypeBadge({ type }: { type: ReviewListItem["document"]["type"] }) {
   if (type === "SRS") {
     return (
-      <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-indigo-100 text-indigo-700">
+      <span className="inline-flex items-center rounded-lg px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-blue-50 text-blue-700">
         SRS
       </span>
     );
   }
   if (type === "OPPM") {
     return (
-      <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-violet-100 text-violet-700">
+      <span className="inline-flex items-center rounded-lg px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-violet-50 text-violet-700">
         OPPM
       </span>
     );
   }
   return (
-    <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-gray-100 text-gray-500">
+    <span className="inline-flex items-center rounded-lg px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide bg-gray-100 text-gray-500">
       ?
     </span>
   );
@@ -141,7 +141,7 @@ function ReviewCard({ review }: { review: ReviewListItem }) {
   const statusBadge = review.isApproved ? (
     <Badge
       variant="outline"
-      className="gap-1 border-green-200 bg-green-50 text-green-700 text-[11px]"
+      className="gap-1 border-emerald-200 bg-emerald-50 text-emerald-700 text-[11px] rounded-lg"
     >
       <CheckCircle2 className="h-3 w-3" />
       Approved
@@ -149,7 +149,7 @@ function ReviewCard({ review }: { review: ReviewListItem }) {
   ) : doc.status === "REVIEWED" ? (
     <Badge
       variant="outline"
-      className="gap-1 border-blue-200 bg-blue-50 text-blue-700 text-[11px]"
+      className="gap-1 border-blue-200 bg-blue-50 text-blue-700 text-[11px] rounded-lg"
     >
       <FileSearch className="h-3 w-3" />
       Reviewed
@@ -157,7 +157,7 @@ function ReviewCard({ review }: { review: ReviewListItem }) {
   ) : (
     <Badge
       variant="outline"
-      className="gap-1 border-amber-200 bg-amber-50 text-amber-700 text-[11px]"
+      className="gap-1 border-amber-200 bg-amber-50 text-amber-700 text-[11px] rounded-lg"
     >
       <Clock className="h-3 w-3" />
       Pending
@@ -165,7 +165,7 @@ function ReviewCard({ review }: { review: ReviewListItem }) {
   );
 
   return (
-    <Card className="group transition-shadow hover:shadow-md">
+    <Card className="group border-0 shadow-sm rounded-2xl bg-white card-hover overflow-hidden">
       <CardHeader className="pb-3">
         <div className="flex items-start gap-3">
           {/* Score */}
@@ -181,7 +181,7 @@ function ReviewCard({ review }: { review: ReviewListItem }) {
               {review.feedback && !review.isApproved && (
                 <Badge
                   variant="outline"
-                  className="border-gray-200 bg-gray-50 text-gray-500 text-[10px]"
+                  className="border-gray-200 bg-gray-50 text-gray-400 text-[10px] rounded-lg"
                 >
                   Feedback added
                 </Badge>
@@ -192,25 +192,26 @@ function ReviewCard({ review }: { review: ReviewListItem }) {
               {doc.name}
             </p>
 
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-gray-400">
               <Link
                 href={`/projects/${doc.project.id}`}
-                className="text-indigo-600 hover:underline font-medium"
+                className="text-blue-600 hover:underline font-medium"
                 onClick={(e) => e.stopPropagation()}
               >
                 {doc.project.name}
               </Link>
               {" · "}
-              Reviewed {timeAgo(review.createdAt)}
+              Reviewed <span suppressHydrationWarning>{timeAgo(review.createdAt)}</span>
             </p>
           </div>
 
           {/* View button */}
           <Button
             render={<Link href={`/reviews/${review.id}`} />}
+            nativeButton={false}
             variant="ghost"
             size="sm"
-            className="shrink-0 hidden sm:flex h-8 gap-1.5 text-xs text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700"
+            className="shrink-0 hidden sm:flex h-8 gap-1.5 text-xs text-blue-600 hover:bg-blue-50 hover:text-blue-700 rounded-xl"
           >
             <Eye className="h-3.5 w-3.5" />
             View
@@ -221,23 +222,23 @@ function ReviewCard({ review }: { review: ReviewListItem }) {
       {/* AI summary + flagged issues row */}
       {review.aiSummary && (
         <CardContent className="pt-0">
-          <div className="rounded-lg bg-gray-50 px-3 py-2.5 space-y-1.5">
+          <div className="rounded-xl bg-gray-50/80 px-3.5 py-3 space-y-1.5">
             {review.aiSummary.summary && (
-              <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">
+              <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">
                 {review.aiSummary.summary}
               </p>
             )}
 
-            <div className="flex flex-wrap items-center gap-3 text-[11px] text-gray-500">
+            <div className="flex flex-wrap items-center gap-3 text-[11px] text-gray-400">
               {review.aiSummary.flaggedCount > 0 && (
-                <span className="flex items-center gap-1 text-red-600">
+                <span className="flex items-center gap-1 text-red-500">
                   <AlertCircle className="h-3 w-3" />
                   {review.aiSummary.flaggedCount} flagged{" "}
                   {review.aiSummary.flaggedCount === 1 ? "issue" : "issues"}
                 </span>
               )}
               {review.aiSummary.missingSectionCount > 0 && (
-                <span className="flex items-center gap-1 text-amber-600">
+                <span className="flex items-center gap-1 text-amber-500">
                   <FileText className="h-3 w-3" />
                   {review.aiSummary.missingSectionCount} missing{" "}
                   {review.aiSummary.missingSectionCount === 1
@@ -247,14 +248,14 @@ function ReviewCard({ review }: { review: ReviewListItem }) {
               )}
               {review.aiSummary.flaggedCount === 0 &&
                 review.aiSummary.missingSectionCount === 0 && (
-                  <span className="flex items-center gap-1 text-green-600">
+                  <span className="flex items-center gap-1 text-emerald-500">
                     <CheckCircle2 className="h-3 w-3" />
                     No issues flagged
                   </span>
                 )}
 
-              <span className="ml-auto text-gray-400">
-                {formatDate(review.createdAt)}
+              <span className="ml-auto text-gray-300">
+                <span suppressHydrationWarning>{formatDate(review.createdAt)}</span>
               </span>
             </div>
           </div>
@@ -263,9 +264,10 @@ function ReviewCard({ review }: { review: ReviewListItem }) {
           <div className="mt-3 sm:hidden">
             <Button
               render={<Link href={`/reviews/${review.id}`} />}
+              nativeButton={false}
               variant="outline"
               size="sm"
-              className="w-full gap-1.5 text-xs text-indigo-600 border-indigo-200 hover:bg-indigo-50"
+              className="w-full gap-1.5 text-xs text-blue-600 border-blue-200 hover:bg-blue-50 rounded-xl"
             >
               <Eye className="h-3.5 w-3.5" />
               View full review
@@ -282,23 +284,23 @@ function ReviewCard({ review }: { review: ReviewListItem }) {
 // ─────────────────────────────────────────────
 function ReviewCardSkeleton() {
   return (
-    <Card>
+    <Card className="border-0 shadow-sm rounded-2xl bg-white">
       <CardHeader className="pb-3">
         <div className="flex items-start gap-3">
-          <Skeleton className="h-10 w-10 rounded-full shrink-0" />
+          <Skeleton className="h-11 w-11 rounded-xl shrink-0" />
           <div className="flex-1 space-y-2">
             <div className="flex gap-2">
-              <Skeleton className="h-4 w-10" />
-              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-10 rounded-lg" />
+              <Skeleton className="h-4 w-16 rounded-lg" />
             </div>
             <Skeleton className="h-5 w-3/4" />
             <Skeleton className="h-3 w-1/2" />
           </div>
-          <Skeleton className="h-8 w-14 rounded-md shrink-0 hidden sm:block" />
+          <Skeleton className="h-8 w-14 rounded-xl shrink-0 hidden sm:block" />
         </div>
       </CardHeader>
       <CardContent className="pt-0">
-        <Skeleton className="h-16 w-full rounded-lg" />
+        <Skeleton className="h-16 w-full rounded-xl" />
       </CardContent>
     </Card>
   );
@@ -330,18 +332,19 @@ function EmptyState({ statusFilter }: { statusFilter: StatusFilter }) {
   const { title, desc } = messages[statusFilter];
 
   return (
-    <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-white py-20 text-center">
-      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-indigo-50">
-        <FileSearch className="h-7 w-7 text-indigo-400" />
+    <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-white py-20 text-center animate-fade-in">
+      <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50">
+        <FileSearch className="h-7 w-7 text-blue-400" />
       </div>
       <h3 className="mb-1 text-base font-semibold text-gray-900">{title}</h3>
-      <p className="max-w-xs text-sm text-gray-500">{desc}</p>
+      <p className="max-w-xs text-sm text-gray-400">{desc}</p>
       {statusFilter === "ALL" && (
         <Button
           render={<Link href="/projects" />}
+          nativeButton={false}
           variant="outline"
           size="sm"
-          className="mt-5 border-indigo-200 text-indigo-600 hover:bg-indigo-50"
+          className="mt-5 border-blue-200 text-blue-600 hover:bg-blue-50 rounded-xl"
         >
           Go to Projects
         </Button>
@@ -359,15 +362,13 @@ function ReviewsPageInner() {
 
   const initialStatus = (searchParams.get("status") as StatusFilter) ?? "ALL";
 
-  const [reviews, setReviews] = useState<ReviewListItem[]>([]);
-  const [meta, setMeta] = useState({
-    total: 0,
-    totalPending: 0,
-    totalReviewed: 0,
-    totalApproved: 0,
+  // Consolidate state to prevent cascading updates from different async lines
+  const [viewState, setViewState] = useState({
+    reviews: [] as ReviewListItem[],
+    meta: { total: 0, totalPending: 0, totalReviewed: 0, totalApproved: 0 },
+    isLoading: true,
+    isRefreshing: false,
   });
-  const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(initialStatus);
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("ALL");
@@ -375,8 +376,10 @@ function ReviewsPageInner() {
 
   const loadReviews = useCallback(
     async (refresh = false) => {
-      if (refresh) setIsRefreshing(true);
-      else setIsLoading(true);
+      setViewState(prev => ({ 
+        ...prev, 
+        [refresh ? 'isRefreshing' : 'isLoading']: true 
+      }));
 
       try {
         const params = new URLSearchParams();
@@ -385,20 +388,26 @@ function ReviewsPageInner() {
 
         const url = `/api/reviews${params.toString() ? `?${params}` : ""}`;
         const res = await fetch(url);
-        const data: ReviewsResponse = await res.json();
-
+        
         if (!res.ok) {
           toast.error("Failed to load reviews.");
+          setViewState(prev => ({ ...prev, isLoading: false, isRefreshing: false }));
           return;
         }
 
-        setReviews(data.data);
-        setMeta(data.meta);
-      } catch {
+        const data: ReviewsResponse = await res.json();
+        
+        // Single state update for payload + meta + loading status
+        setViewState({
+          reviews: data.data,
+          meta: data.meta,
+          isLoading: false,
+          isRefreshing: false
+        });
+      } catch (err) {
+        console.error("loadReviews Error:", err);
         toast.error("An unexpected error occurred.");
-      } finally {
-        setIsLoading(false);
-        setIsRefreshing(false);
+        setViewState(prev => ({ ...prev, isLoading: false, isRefreshing: false }));
       }
     },
     [statusFilter, typeFilter],
@@ -421,7 +430,7 @@ function ReviewsPageInner() {
   }
 
   // ── Client-side search filter ──────────────────────────────────────
-  const filtered = reviews.filter((r) => {
+  const filtered = viewState.reviews.filter((r) => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
     return (
@@ -431,14 +440,14 @@ function ReviewsPageInner() {
   });
 
   return (
-    <div className="px-6 py-8 max-w-5xl mx-auto w-full space-y-6">
+    <div className="px-8 py-8 max-w-5xl mx-auto w-full space-y-6 animate-fade-in-up">
       {/* ── Page header ──────────────────────────────────────────────── */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-gray-900">
             Reviews
           </h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-gray-400">
             AI-generated reports on student SRS and OPPM documents.
           </p>
         </div>
@@ -447,11 +456,11 @@ function ReviewsPageInner() {
           variant="outline"
           size="sm"
           onClick={() => loadReviews(true)}
-          disabled={isRefreshing || isLoading}
-          className="shrink-0 gap-1.5"
+          disabled={viewState.isRefreshing || viewState.isLoading}
+          className="shrink-0 gap-1.5 rounded-xl border-gray-200 text-gray-500"
         >
           <RefreshCw
-            className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")}
+            className={cn("h-3.5 w-3.5", viewState.isRefreshing && "animate-spin")}
           />
           Refresh
         </Button>
@@ -462,51 +471,51 @@ function ReviewsPageInner() {
         value={statusFilter}
         onValueChange={(v) => handleStatusChange(v as StatusFilter)}
       >
-        <TabsList className="h-9 w-full sm:w-auto">
+        <TabsList className="h-10 w-full sm:w-auto rounded-xl bg-gray-100/80 p-1">
           <TabsTrigger
             value="ALL"
-            className="text-xs gap-1.5 flex-1 sm:flex-none"
+            className="text-xs gap-1.5 flex-1 sm:flex-none rounded-lg"
           >
             All
-            {!isLoading && (
+            {!viewState.isLoading && (
               <span className="ml-0.5 rounded-full bg-gray-200 px-1.5 py-0.5 text-[10px] font-semibold text-gray-600">
-                {meta.total}
+                {viewState.meta.total}
               </span>
             )}
           </TabsTrigger>
           <TabsTrigger
             value="PENDING"
-            className="text-xs gap-1.5 flex-1 sm:flex-none"
+            className="text-xs gap-1.5 flex-1 sm:flex-none rounded-lg"
           >
             <Clock className="h-3 w-3" />
             Pending
-            {!isLoading && meta.totalPending > 0 && (
+            {!viewState.isLoading && viewState.meta.totalPending > 0 && (
               <span className="ml-0.5 rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-700">
-                {meta.totalPending}
+                {viewState.meta.totalPending}
               </span>
             )}
           </TabsTrigger>
           <TabsTrigger
             value="REVIEWED"
-            className="text-xs gap-1.5 flex-1 sm:flex-none"
+            className="text-xs gap-1.5 flex-1 sm:flex-none rounded-lg"
           >
             <FileSearch className="h-3 w-3" />
             Reviewed
-            {!isLoading && meta.totalReviewed > 0 && (
+            {!viewState.isLoading && viewState.meta.totalReviewed > 0 && (
               <span className="ml-0.5 rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700">
-                {meta.totalReviewed}
+                {viewState.meta.totalReviewed}
               </span>
             )}
           </TabsTrigger>
           <TabsTrigger
             value="APPROVED"
-            className="text-xs gap-1.5 flex-1 sm:flex-none"
+            className="text-xs gap-1.5 flex-1 sm:flex-none rounded-lg"
           >
             <CheckCircle2 className="h-3 w-3" />
             Approved
-            {!isLoading && meta.totalApproved > 0 && (
-              <span className="ml-0.5 rounded-full bg-green-100 px-1.5 py-0.5 text-[10px] font-semibold text-green-700">
-                {meta.totalApproved}
+            {!viewState.isLoading && viewState.meta.totalApproved > 0 && (
+              <span className="ml-0.5 rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700">
+                {viewState.meta.totalApproved}
               </span>
             )}
           </TabsTrigger>
@@ -516,25 +525,25 @@ function ReviewsPageInner() {
       {/* ── Search + type filter ─────────────────────────────────────── */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-300" />
           <Input
             placeholder="Search by document or project name…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
+            className="pl-10 rounded-xl border-gray-200 bg-white"
           />
         </div>
 
         <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 shrink-0 text-gray-400" />
+          <Filter className="h-4 w-4 shrink-0 text-gray-300" />
           <Select
             value={typeFilter}
             onValueChange={(v) => setTypeFilter(v as TypeFilter)}
           >
-            <SelectTrigger className="h-9 w-36 text-xs">
+            <SelectTrigger className="h-9 w-36 text-xs rounded-xl border-gray-200">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="rounded-xl">
               <SelectItem value="ALL">All types</SelectItem>
               <SelectItem value="SRS">SRS only</SelectItem>
               <SelectItem value="OPPM">OPPM only</SelectItem>
@@ -544,15 +553,15 @@ function ReviewsPageInner() {
       </div>
 
       {/* ── Results count ────────────────────────────────────────────── */}
-      {!isLoading && reviews.length > 0 && (
-        <p className="text-sm text-gray-500">
+      {!viewState.isLoading && viewState.reviews.length > 0 && (
+        <p className="text-sm text-gray-400">
           Showing{" "}
-          <span className="font-medium text-gray-700">{filtered.length}</span>{" "}
-          {filtered.length !== reviews.length && (
+          <span className="font-medium text-gray-600">{filtered.length}</span>{" "}
+          {filtered.length !== viewState.reviews.length && (
             <>
               of{" "}
-              <span className="font-medium text-gray-700">
-                {reviews.length}
+              <span className="font-medium text-gray-600">
+                {viewState.reviews.length}
               </span>{" "}
             </>
           )}
@@ -561,7 +570,7 @@ function ReviewsPageInner() {
       )}
 
       {/* ── Content ──────────────────────────────────────────────────── */}
-      {isLoading ? (
+      {viewState.isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (
             <ReviewCardSkeleton key={i} />
@@ -569,7 +578,7 @@ function ReviewsPageInner() {
         </div>
       ) : filtered.length === 0 ? (
         searchQuery ? (
-          <div className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-gray-200 bg-white py-16 text-center">
+          <div className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-white py-16 text-center">
             <Search className="mb-3 h-10 w-10 text-gray-300" />
             <p className="text-sm font-medium text-gray-600">
               No results found
@@ -580,7 +589,7 @@ function ReviewsPageInner() {
             <Button
               variant="ghost"
               size="sm"
-              className="mt-3 text-indigo-600"
+              className="mt-3 text-blue-600"
               onClick={() => setSearchQuery("")}
             >
               Clear search
@@ -608,9 +617,9 @@ export default function ReviewsPage() {
   return (
     <Suspense
       fallback={
-        <div className="px-6 py-8 max-w-5xl mx-auto w-full space-y-6">
+        <div className="px-8 py-8 max-w-5xl mx-auto w-full space-y-6">
           <Skeleton className="h-8 w-40" />
-          <Skeleton className="h-9 w-80 rounded-md" />
+          <Skeleton className="h-10 w-80 rounded-xl" />
           <div className="space-y-3">
             {Array.from({ length: 5 }).map((_, i) => (
               <ReviewCardSkeleton key={i} />

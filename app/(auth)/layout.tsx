@@ -16,18 +16,15 @@ export default function AuthLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-violet-50 flex flex-col">
+    <div className="min-h-screen bg-[#f6f8fb] flex flex-col">
       {/* ── Top bar ──────────────────────────────────────────────────── */}
-      <header className="flex items-center gap-2.5 px-6 py-4">
-        <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 shadow-sm transition-transform group-hover:scale-105">
-            <BookOpen className="h-4 w-4 text-white" />
+      <header className="flex items-center gap-3 px-6 py-5">
+        <Link href="/" className="flex items-center gap-3 group">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-md shadow-blue-200 transition-transform group-hover:scale-105">
+            <BookOpen className="h-[18px] w-[18px] text-white" />
           </div>
           <div className="leading-tight">
-            <p className="text-sm font-bold text-gray-900">AdvisorDesk</p>
-            <p className="text-[10px] text-gray-400 uppercase tracking-wider">
-              Review System
-            </p>
+            <p className="text-[15px] font-bold text-gray-900 tracking-tight">AdvisorDesk</p>
           </div>
         </Link>
       </header>
@@ -39,7 +36,7 @@ export default function AuthLayout({
 
       {/* ── Footer ───────────────────────────────────────────────────── */}
       <footer className="py-4 text-center text-xs text-gray-400">
-        &copy; {new Date().getFullYear()} AdvisorDesk. All rights reserved.
+        &copy; <span suppressHydrationWarning>{new Date().getFullYear()}</span> AdvisorDesk. All rights reserved.
       </footer>
     </div>
   )

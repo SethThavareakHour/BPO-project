@@ -47,45 +47,37 @@ function StatCard({
   const content = (
     <Card
       className={cn(
-        "relative overflow-hidden transition-shadow",
-        href && "hover:shadow-md cursor-pointer"
+        "relative overflow-hidden border border-gray-100/60 transition-all duration-300 group",
+        "bg-white rounded-xl shadow-[0_4px_20px_-6px_rgba(0,0,0,0.05)] hover:shadow-[0_15px_40px_-10px_rgba(0,0,0,0.12)] hover:-translate-y-0.5",
+        href && "cursor-pointer hover:border-blue-200"
       )}
     >
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-gray-600">
-          {title}
-        </CardTitle>
-        <div className={cn("flex h-9 w-9 items-center justify-center rounded-lg", iconBg)}>
-          <Icon className={cn("h-5 w-5", iconColor)} />
-        </div>
-      </CardHeader>
+      <Link href={href || "#"} className={cn("block p-2.5", !href && "pointer-events-none")}>
+        <div className="flex items-center gap-3">
+          <div className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-transform group-hover:scale-105", iconBg)}>
+            <Icon className={cn("h-4 w-4", iconColor)} strokeWidth={2.5} />
+          </div>
 
-      <CardContent>
-        <div className="flex items-end justify-between">
-          <div>
-            <p className="text-3xl font-bold tracking-tight text-gray-900">
-              {value.toLocaleString()}
+          <div className="flex-1 min-w-0 px-0.5">
+            <p className="text-[11px] font-black text-gray-400 mb-0.5 tracking-wider uppercase truncate leading-none">
+              {title}
             </p>
-            <p className="mt-1 text-xs text-gray-500">{description}</p>
+            <span className="text-2xl font-black tracking-tight text-gray-900 leading-none">
+              {value.toLocaleString()}
+            </span>
           </div>
 
           {href && (
-            <ArrowRight className="mb-1 h-4 w-4 text-gray-300 transition-transform group-hover:translate-x-0.5" />
+            <div className="h-5 w-5 shrink-0 rounded-full bg-gray-50 flex items-center justify-center group-hover:bg-black group-hover:text-white transition-all">
+              <ArrowRight className="h-2.5 w-2.5 group-hover:-rotate-45 transition-transform" />
+            </div>
           )}
         </div>
-      </CardContent>
+      </Link>
     </Card>
   )
 
-  if (href) {
-    return (
-      <Link href={href} className="group block">
-        {content}
-      </Link>
-    )
-  }
-
-  return content
+  return content;
 }
 
 // ─────────────────────────────────────────────
@@ -93,10 +85,10 @@ function StatCard({
 // ─────────────────────────────────────────────
 function StatCardSkeleton() {
   return (
-    <Card>
+    <Card className="border-0 shadow-sm rounded-2xl bg-white">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <Skeleton className="h-4 w-28" />
-        <Skeleton className="h-9 w-9 rounded-lg" />
+        <Skeleton className="h-10 w-10 rounded-xl" />
       </CardHeader>
       <CardContent>
         <Skeleton className="h-8 w-16 mb-2" />
@@ -116,20 +108,20 @@ function RecentReviewsList({
 }) {
   if (reviews.length === 0) {
     return (
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-            <TrendingUp className="h-4 w-4 text-indigo-500" />
+      <Card className="h-full border border-gray-100/80 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-[24px] bg-white flex flex-col">
+        <CardHeader className="pb-4 pt-6 px-7 shrink-0">
+          <CardTitle className="text-[15px] font-bold text-gray-900 flex items-center gap-2">
+            <div className="h-2 w-2 rounded-full bg-blue-500" />
             Recent Activity
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100">
-              <Clock className="h-6 w-6 text-gray-400" />
+        <CardContent className="flex-1 flex items-center justify-center pb-7 px-7">
+          <div className="w-full flex flex-col items-center justify-center py-12 text-center bg-gray-50/50 rounded-2xl border border-dashed border-gray-200 h-full">
+            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-[18px] bg-white shadow-sm border border-gray-100">
+              <Clock className="h-6 w-6 text-gray-300" />
             </div>
-            <p className="text-sm font-medium text-gray-600">No reviews yet</p>
-            <p className="mt-1 text-xs text-gray-400">
+            <p className="text-sm font-bold text-gray-700">No activity yet</p>
+            <p className="mt-1.5 text-[13px] text-gray-400 max-w-[240px]">
               Generate an AI review for a document to see activity here.
             </p>
           </div>
@@ -139,81 +131,75 @@ function RecentReviewsList({
   }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-3">
-        <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-          <TrendingUp className="h-4 w-4 text-indigo-500" />
+    <Card className="h-full border border-gray-100/80 shadow-[0_2px_10px_-4px_rgba(0,0,0,0.05)] rounded-[24px] bg-white overflow-hidden flex flex-col">
+      <CardHeader className="flex flex-row items-center justify-between pb-4 pt-6 px-7 shrink-0">
+        <CardTitle className="text-[15px] font-bold text-gray-900 flex items-center gap-2">
+          <div className="h-2.5 w-2.5 rounded-full bg-blue-500" />
           Recent Activity
         </CardTitle>
         <Link
           href="/reviews"
-          className="text-xs text-indigo-600 hover:text-indigo-700 hover:underline font-medium"
+          className="text-[13px] text-blue-600 hover:text-blue-700 font-semibold flex items-center gap-1 transition-all hover:gap-1.5"
         >
-          View all
+          View all reviews
+          <ArrowRight className="h-3.5 w-3.5" />
         </Link>
       </CardHeader>
 
-      <CardContent className="px-0 pb-0">
-        <ul className="divide-y divide-gray-100">
-          {reviews.map((review) => (
-            <li key={review.id}>
-              <Link
-                href={`/reviews/${review.id}`}
-                className="flex items-start gap-3 px-6 py-3 transition-colors hover:bg-gray-50"
-              >
-                {/* Type badge */}
-                <div className="mt-0.5 shrink-0">
-                  <span
-                    className={cn(
-                      "inline-flex items-center justify-center rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide",
-                      review.documentType === "SRS"
-                        ? "bg-indigo-100 text-indigo-700"
-                        : "bg-violet-100 text-violet-700"
-                    )}
-                  >
-                    {review.documentType}
-                  </span>
-                </div>
+      <CardContent className="px-3 pb-3 flex-1 overflow-auto">
+        <div className="h-full rounded-2xl border border-gray-100 overflow-hidden">
+          <ul className="divide-y divide-gray-50">
+            {reviews.map((review) => (
+              <li key={review.id} className="group/item">
+                <Link
+                  href={`/reviews/${review.id}`}
+                  className="flex items-center gap-4 px-4 py-3 transition-all hover:bg-gray-50/80"
+                >
+                  {/* Type badge */}
+                  <div className="shrink-0 flex items-center justify-center h-9 w-9 rounded-xl bg-gray-100/50 group-hover/item:bg-white border text-[10px] font-black tracking-wide transition-colors shrink-0">
+                    <span
+                      className={cn(
+                        review.documentType === "SRS" ? "text-blue-600" : "text-violet-600"
+                      )}
+                    >
+                      {review.documentType}
+                    </span>
+                  </div>
 
-                {/* Content */}
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-gray-900">
-                    {review.documentName}
-                  </p>
-                  <p className="truncate text-xs text-gray-500">
-                    {review.projectName}
-                  </p>
-                </div>
+                  {/* Content */}
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[14px] font-bold text-gray-900 group-hover/item:text-blue-600 transition-colors">
+                      {review.documentName}
+                    </p>
+                    <p className="truncate text-xs text-gray-400 font-medium mt-0.5 flex items-center gap-1.5">
+                      <FolderKanban className="h-2.5 w-2.5" />
+                      {review.projectName}
+                    </p>
+                  </div>
 
-                {/* Status + Time */}
-                <div className="shrink-0 text-right">
-                  <Badge
-                    variant="outline"
-                    className={cn(
-                      "mb-1 text-[10px]",
-                      review.isApproved
-                        ? "border-green-200 bg-green-50 text-green-700"
-                        : "border-amber-200 bg-amber-50 text-amber-700"
-                    )}
-                  >
-                    {review.isApproved ? "Approved" : "Reviewed"}
-                  </Badge>
-                  <p className="text-[10px] text-gray-400">
-                    {timeAgo(review.createdAt)}
-                  </p>
-                </div>
-              </Link>
-            </li>
-          ))}
-        </ul>
-
-        {reviews.length > 0 && (
-          <div className="border-t px-6 py-3">
-            <p className="text-[11px] text-gray-400">
-              Last updated: {formatDate(reviews[0].createdAt)}
-            </p>
-          </div>
-        )}
+                  {/* Status + Time */}
+                  <div className="shrink-0 flex flex-col items-end justify-center">
+                    <Badge
+                      variant="outline"
+                      className={cn(
+                        "mb-1.5 text-[11px] font-bold border-0 px-2.5 py-1 rounded-lg",
+                        review.isApproved
+                          ? "bg-emerald-50 text-emerald-700"
+                          : "bg-amber-50 text-amber-700"
+                      )}
+                    >
+                      {review.isApproved ? "Approved" : "Reviewed"}
+                    </Badge>
+                    <p className="text-[11px] font-medium text-gray-400 flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {timeAgo(review.createdAt)}
+                    </p>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
       </CardContent>
     </Card>
   )
@@ -224,14 +210,14 @@ function RecentReviewsList({
 // ─────────────────────────────────────────────
 function RecentReviewsSkeleton() {
   return (
-    <Card>
+    <Card className="border-0 shadow-sm rounded-2xl bg-white">
       <CardHeader className="pb-3">
         <Skeleton className="h-4 w-36" />
       </CardHeader>
       <CardContent className="space-y-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="flex items-start gap-3">
-            <Skeleton className="h-5 w-9 rounded" />
+            <Skeleton className="h-5 w-9 rounded-lg" />
             <div className="flex-1 space-y-1.5">
               <Skeleton className="h-4 w-3/4" />
               <Skeleton className="h-3 w-1/2" />
@@ -259,7 +245,7 @@ export function StatsCards({ stats, isLoading = false }: StatsCardsProps) {
   if (isLoading || !stats) {
     return (
       <div className="space-y-6">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
             <StatCardSkeleton key={i} />
           ))}
@@ -270,16 +256,16 @@ export function StatsCards({ stats, isLoading = false }: StatsCardsProps) {
   }
 
   return (
-    <div className="space-y-6">
-      {/* ── Stat cards grid ────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-y-8 lg:gap-x-8">
+      {/* ── Left Column: Stat Cards (Height-Aligned) ────────────────── */}
+      <div className="lg:col-span-3 h-full flex flex-col justify-between gap-4">
         <StatCard
           title="Total Projects"
           value={stats.totalProjects}
           description="Student projects managed"
           icon={FolderKanban}
-          iconColor="text-indigo-600"
-          iconBg="bg-indigo-50"
+          iconColor="text-[#113F67]"
+          iconBg="bg-[#113F67]/10"
           href="/projects"
         />
 
@@ -288,8 +274,8 @@ export function StatsCards({ stats, isLoading = false }: StatsCardsProps) {
           value={stats.totalStudents}
           description="Across all projects"
           icon={Users}
-          iconColor="text-violet-600"
-          iconBg="bg-violet-50"
+          iconColor="text-[#34699A]"
+          iconBg="bg-[#34699A]/10"
           href="/projects"
         />
 
@@ -298,8 +284,8 @@ export function StatsCards({ stats, isLoading = false }: StatsCardsProps) {
           value={stats.pendingReviews}
           description="Documents awaiting review"
           icon={Clock}
-          iconColor="text-amber-600"
-          iconBg="bg-amber-50"
+          iconColor="text-[#58A0C8]"
+          iconBg="bg-[#58A0C8]/15"
           href="/reviews?status=PENDING"
         />
 
@@ -308,14 +294,16 @@ export function StatsCards({ stats, isLoading = false }: StatsCardsProps) {
           value={stats.approvedDocuments}
           description="Documents approved"
           icon={CheckCircle2}
-          iconColor="text-green-600"
-          iconBg="bg-green-50"
+          iconColor="text-emerald-600"
+          iconBg="bg-emerald-100"
           href="/reviews?status=APPROVED"
         />
       </div>
 
-      {/* ── Recent activity ────────────────────────────────────────── */}
-      <RecentReviewsList reviews={stats.recentReviews} />
+      {/* ── Right Column: Recent activity ───────────────────────────── */}
+      <div className="lg:col-span-9 h-full">
+        <RecentReviewsList reviews={stats.recentReviews} />
+      </div>
     </div>
   )
 }

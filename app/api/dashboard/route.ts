@@ -80,7 +80,7 @@ export async function GET() {
       totalStudents,
       pendingReviews,
       approvedDocuments,
-      recentReviews: recentReviews.map((r: (typeof recentReviews)[number]) => ({
+      recentReviews: recentReviews.map((r: any) => ({
         id: r.id,
         documentName: r.document.name,
         documentType: r.document.type,

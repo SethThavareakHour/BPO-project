@@ -45,14 +45,14 @@ export function DashboardClientPage({ userName }: DashboardClientPageProps) {
   }
 
   return (
-    <div className="px-6 py-8 max-w-7xl mx-auto w-full space-y-8">
+    <div className="p-6 max-w-7xl mx-auto w-full space-y-6 animate-fade-in-up">
       {/* ── Page header ──────────────────────────────────────────────── */}
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-            {getGreeting()}, {userName.split(" ")[0]} 👋
+            <span suppressHydrationWarning>{getGreeting()}</span>, {userName.split(" ")[0]} 👋
           </h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1.5 text-sm text-gray-400">
             Here&apos;s an overview of your projects and document reviews.
           </p>
         </div>
@@ -62,7 +62,7 @@ export function DashboardClientPage({ userName }: DashboardClientPageProps) {
           size="sm"
           onClick={() => loadStats(true)}
           disabled={isRefreshing || isLoading}
-          className="shrink-0"
+          className="shrink-0 rounded-xl border-gray-200 hover:bg-gray-50 text-gray-600"
         >
           <RefreshCw
             className={`mr-2 h-3.5 w-3.5 ${isRefreshing ? "animate-spin" : ""}`}

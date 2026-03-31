@@ -14,12 +14,13 @@ import {
   ChevronDown,
   User,
   BookOpen,
+  Settings,
+  Bell,
 } from "lucide-react";
 
 import { cn, initials } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,7 +37,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 // ─────────────────────────────────────────────
 const NAV_ITEMS = [
   {
-    label: "Dashboard",
+    label: "Home",
     href: "/dashboard",
     icon: LayoutDashboard,
   },
@@ -77,24 +78,31 @@ function NavLink({
   const Icon = item.icon;
 
   return (
-    <Link
-      href={item.href}
-      onClick={onClick}
-      className={cn(
-        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-        isActive
-          ? "bg-indigo-50 text-indigo-700"
-          : "text-gray-600 hover:bg-gray-100 hover:text-gray-900",
+    <div className="relative">
+      {/* Active indicator bar */}
+      {isActive && (
+        <div className="absolute left-0 top-1/2 -translate-y-1/2 h-7 w-[3px] rounded-r-full bg-blue-600" />
       )}
-    >
-      <Icon
+      <Link
+        href={item.href}
+        onClick={onClick}
         className={cn(
-          "h-4 w-4 shrink-0",
-          isActive ? "text-indigo-600" : "text-gray-400",
+          "flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all duration-200",
+          isActive
+            ? "bg-gradient-to-r from-blue-50/80 to-indigo-50/50 text-blue-700"
+            : "text-gray-500 hover:bg-gray-50 hover:text-gray-800",
         )}
-      />
-      {item.label}
-    </Link>
+      >
+        <Icon
+          className={cn(
+            "h-[18px] w-[18px] shrink-0 transition-colors",
+            isActive ? "text-blue-600" : "text-gray-400",
+          )}
+          strokeWidth={isActive ? 2.2 : 1.8}
+        />
+        {item.label}
+      </Link>
+    </div>
   );
 }
 
@@ -117,23 +125,20 @@ function SidebarContent({
   return (
     <div className="flex h-full flex-col">
       {/* ── Logo ──────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-2.5 px-4 py-5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600">
-          <BookOpen className="h-4 w-4 text-white" />
+      <div className="flex items-center gap-3 px-5 py-6">
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-md shadow-blue-200">
+          <BookOpen className="h-[18px] w-[18px] text-white" />
         </div>
         <div className="leading-tight">
-          <p className="text-sm font-bold text-gray-900">AdvisorDesk</p>
-          <p className="text-[10px] text-gray-400 uppercase tracking-wider">
-            Review System
+          <p className="text-[15px] font-bold text-gray-900 tracking-tight">
+            Technical BPO
           </p>
         </div>
       </div>
 
-      <Separator />
-
       {/* ── Navigation ────────────────────────────────────────────── */}
-      <nav className="flex-1 space-y-1 px-3 py-4">
-        <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-wider text-gray-400">
+      <nav className="flex-1 space-y-1 px-3 pt-2 pb-4">
+        <p className="mb-3 px-3.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-gray-400">
           Menu
         </p>
         {NAV_ITEMS.map((item) => (
@@ -148,24 +153,42 @@ function SidebarContent({
         ))}
       </nav>
 
-      <Separator />
+      {/* ── Bottom Section ─────────────────────────────────────────── */}
+      <div className="space-y-1 px-3 pb-2">
+        <Link
+          href="#"
+          className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-gray-500 transition-all hover:bg-gray-50 hover:text-gray-800"
+        >
+          <Settings className="h-[18px] w-[18px] text-gray-400" strokeWidth={1.8} />
+          Settings
+        </Link>
+        <Link
+          href="#"
+          className="flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-gray-500 transition-all hover:bg-gray-50 hover:text-gray-800"
+        >
+          <Bell className="h-[18px] w-[18px] text-gray-400" strokeWidth={1.8} />
+          Notifications
+        </Link>
+      </div>
+
+      <div className="border-t border-gray-100 mx-3" />
 
       {/* ── User Profile ──────────────────────────────────────────── */}
       <div className="p-3">
         <DropdownMenu>
-          <DropdownMenuTrigger className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
-            <Avatar className="h-8 w-8 shrink-0">
-              <AvatarFallback className="bg-indigo-100 text-indigo-700 text-xs font-semibold">
+          <DropdownMenuTrigger className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+            <Avatar className="h-9 w-9 shrink-0 rounded-xl">
+              <AvatarFallback className="bg-gradient-to-br from-blue-100 to-indigo-100 text-blue-700 text-xs font-semibold rounded-xl">
                 {initials(user.name)}
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-gray-900">
+              <p className="truncate text-sm font-semibold text-gray-900">
                 {user.name}
               </p>
-              <p className="truncate text-xs text-gray-500">{user.email}</p>
+              <p className="truncate text-[11px] text-gray-400">{user.email}</p>
             </div>
-            <ChevronDown className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+            <LogOut className="h-4 w-4 shrink-0 text-gray-300 hover:text-gray-500 transition-colors cursor-pointer" onClick={(e) => { e.stopPropagation(); handleSignOut(); }} />
           </DropdownMenuTrigger>
 
           <DropdownMenuContent
@@ -219,21 +242,21 @@ export function Sidebar({ user }: SidebarProps) {
   return (
     <>
       {/* ── Desktop sidebar ────────────────────────────────────────── */}
-      <aside className="hidden lg:flex lg:w-60 lg:shrink-0 lg:flex-col lg:border-r lg:border-gray-200 lg:bg-white">
+      <aside className="hidden lg:flex lg:w-[260px] lg:shrink-0 lg:flex-col lg:border-r lg:border-gray-100 lg:bg-white">
         <SidebarContent user={user} pathname={pathname} />
       </aside>
 
       {/* ── Mobile top bar + sheet ─────────────────────────────────── */}
-      <div className="flex items-center gap-3 border-b border-gray-200 bg-white px-4 py-3 lg:hidden">
+      <div className="flex items-center gap-3 border-b border-gray-100 bg-white px-4 py-3.5 lg:hidden">
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetTrigger
-            className="inline-flex h-9 w-9 items-center justify-center rounded-md text-gray-600 hover:bg-gray-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-gray-500 hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
             aria-label="Open menu"
           >
             <Menu className="h-5 w-5" />
           </SheetTrigger>
 
-          <SheetContent side="left" className="w-64 p-0">
+          <SheetContent side="left" className="w-[280px] p-0">
             {/* Close button */}
             <div className="absolute right-3 top-3 z-10">
               <Button
@@ -241,6 +264,7 @@ export function Sidebar({ user }: SidebarProps) {
                 size="icon"
                 onClick={() => setMobileOpen(false)}
                 aria-label="Close menu"
+                className="rounded-xl"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -255,11 +279,13 @@ export function Sidebar({ user }: SidebarProps) {
         </Sheet>
 
         {/* Mobile logo */}
-        <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600">
-            <BookOpen className="h-3.5 w-3.5 text-white" />
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-sm">
+            <BookOpen className="h-4 w-4 text-white" />
           </div>
-          <span className="text-sm font-bold text-gray-900">AdvisorDesk</span>
+          <span className="text-sm font-bold text-gray-900 tracking-tight">
+            Technical BPO
+          </span>
         </div>
       </div>
     </>

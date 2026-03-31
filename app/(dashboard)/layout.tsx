@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth"
 import { redirect } from "next/navigation"
-import { Sidebar } from "@/components/dashboard/sidebar"
+import { DashboardHeader } from "@/components/dashboard/header"
 import { Providers } from "@/components/providers"
 
 export default async function DashboardLayout({
@@ -16,9 +16,9 @@ export default async function DashboardLayout({
 
   return (
     <Providers>
-      <div className="flex h-screen overflow-hidden bg-gray-50">
-        {/* ── Sidebar ──────────────────────────────────────────────── */}
-        <Sidebar
+      <div className="min-h-screen flex flex-col bg-[#f6f8fb]">
+        {/* ── Header Navigation ───────────────────────────────────────── */}
+        <DashboardHeader
           user={{
             name: session.user.name ?? "Advisor",
             email: session.user.email ?? "",
@@ -26,11 +26,9 @@ export default async function DashboardLayout({
         />
 
         {/* ── Main content area ─────────────────────────────────────── */}
-        <div className="flex flex-1 flex-col overflow-hidden">
-          <main className="flex-1 overflow-y-auto">
-            {children}
-          </main>
-        </div>
+        <main className="flex-1 w-full pb-12 animate-fade-in">
+          {children}
+        </main>
       </div>
     </Providers>
   )

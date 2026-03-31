@@ -162,6 +162,7 @@ function VerifyEmailContent() {
         <CardFooter className="justify-center border-t pt-4">
           <Button
             render={<Link href="/login" />}
+            nativeButton={false}
             className="bg-indigo-600 px-8 text-white hover:bg-indigo-700"
           >
             Continue to Sign In
@@ -195,6 +196,7 @@ function VerifyEmailContent() {
       <CardFooter className="flex flex-wrap justify-center gap-3 border-t pt-4">
         <Button
           render={<Link href="/register" />}
+          nativeButton={false}
           variant="outline"
           className="border-indigo-200 text-indigo-600 hover:bg-indigo-50"
         >
@@ -202,6 +204,7 @@ function VerifyEmailContent() {
         </Button>
         <Button
           render={<Link href="/login" />}
+          nativeButton={false}
           className="bg-indigo-600 text-white hover:bg-indigo-700"
         >
           Go to Sign In

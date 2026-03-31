@@ -46,6 +46,7 @@ export async function GET() {
         documents: {
           select: {
             status: true,
+            type: true,
           },
         },
       },
@@ -56,7 +57,9 @@ export async function GET() {
       const pendingCount = p.documents.filter(
         (d) => d.status === "PENDING" || d.status === "REVIEWING" || d.status === "REVIEWED"
       ).length
-      const approvedCount = p.documents.filter((d) => d.status === "APPROVED").length
+      
+      const srsCount = p.documents.filter(d => d.type === "SRS").length
+      const oppmCount = p.documents.filter(d => d.type === "OPPM").length
 
       return {
         id: p.id,
@@ -68,7 +71,8 @@ export async function GET() {
         updatedAt: p.updatedAt,
         _count: p._count,
         pendingCount,
-        approvedCount,
+        srsCount,
+        oppmCount,
       }
     })
 
