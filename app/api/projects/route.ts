@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { createDriveFolder } from "@/lib/drive"
 
 const createProjectSchema = z.object({
   name: z
@@ -13,11 +14,23 @@ const createProjectSchema = z.object({
     .string()
     .max(500, "Description must be at most 500 characters")
     .trim()
-    .optional(),
+    .optional()
+    .or(z.literal(""))
+    .nullable(),
   driveFolderId: z
     .string()
     .trim()
-    .optional(),
+    .optional()
+    .or(z.literal(""))
+    .nullable(),
+  studentName: z.string().trim().optional().or(z.literal("")).nullable(),
+  studentEmail: z
+    .string()
+    .trim()
+    .email("Invalid email")
+    .optional()
+    .or(z.literal(""))
+    .nullable(),
 })
 
 // ─────────────────────────────────────────────
@@ -57,7 +70,7 @@ export async function GET() {
       const pendingCount = p.documents.filter(
         (d) => d.status === "PENDING" || d.status === "REVIEWING" || d.status === "REVIEWED"
       ).length
-      
+
       const srsCount = p.documents.filter(d => d.type === "SRS").length
       const oppmCount = p.documents.filter(d => d.type === "OPPM").length
 
@@ -119,14 +132,46 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const { name, description, driveFolderId } = parsed.data
+    const { name, description, driveFolderId, studentName, studentEmail } = parsed.data
+
+    let finalDriveFolderId = driveFolderId;
+
+    // Auto-create a Google Drive folder if one wasn't provided
+    if (!finalDriveFolderId) {
+      try {
+        const user = await prisma.user.findUnique({
+          where: { id: session.user.id },
+          select: { email: true },
+        });
+
+        const shareWith = [];
+        if (user?.email) shareWith.push(user.email);
+        if (studentEmail) shareWith.push(studentEmail);
+
+        if (shareWith.length > 0) {
+          finalDriveFolderId = await createDriveFolder(
+            `[BPO Project] ${name}`,
+            shareWith
+          );
+        }
+      } catch (folderErr) {
+        console.error("Failed to auto-create Drive folder:", folderErr);
+      }
+    }
 
     const project = await prisma.project.create({
       data: {
         name,
         description: description ?? null,
-        driveFolderId: driveFolderId ?? null,
+        driveFolderId: finalDriveFolderId ?? null,
         advisorId: session.user.id,
+        // If student details provided, create them immediately
+        students: studentName && studentEmail ? {
+          create: {
+            name: studentName,
+            email: studentEmail,
+          }
+        } : undefined,
       },
       include: {
         _count: {

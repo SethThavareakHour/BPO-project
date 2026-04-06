@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
         id: f.id,
         name: f.name,
         mimeType: f.mimeType,
-        reason: "Unsupported file type. Only PDF, DOCX, Google Docs, and plain text files are supported.",
+        reason: "Unsupported file type. Supported: PDF, Word, Excel, CSV, PPTX, Images, and Google Docs/Sheets.",
       }))
 
     // ── 7. Persist new documents to the database ──────────────────────

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/db"
+import { deleteDriveFolder, renameDriveFolder } from "@/lib/drive"
 
 const updateProjectSchema = z.object({
   name: z
@@ -105,7 +106,11 @@ export async function PATCH(
     // Ownership check
     const existing = await prisma.project.findUnique({
       where: { id },
-      select: { advisorId: true },
+      select: { 
+        advisorId: true, 
+        name: true, 
+        driveFolderId: true 
+      },
     })
 
     if (!existing) {
@@ -142,6 +147,15 @@ export async function PATCH(
 
     const { name, description, driveFolderId } = parsed.data
 
+    // If name is changed, also rename the Drive folder
+    if (name && name !== existing.name && existing.driveFolderId) {
+      try {
+        await renameDriveFolder(existing.driveFolderId, `[BPO Project] ${name}`)
+      } catch (err) {
+        console.warn("Drive folder rename failed, but proceeding with database update.", err)
+      }
+    }
+
     const updated = await prisma.project.update({
       where: { id },
       data: {
@@ -177,7 +191,7 @@ export async function PATCH(
 // Deletes the project and all related data (cascade)
 // ─────────────────────────────────────────────
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
@@ -188,11 +202,13 @@ export async function DELETE(
     }
 
     const { id } = await params
+    const searchParams = req.nextUrl.searchParams
+    const confirmName = searchParams.get("confirmName")
 
     // Ownership check
     const existing = await prisma.project.findUnique({
       where: { id },
-      select: { advisorId: true, name: true },
+      select: { advisorId: true, name: true, driveFolderId: true },
     })
 
     if (!existing) {
@@ -206,10 +222,24 @@ export async function DELETE(
       return NextResponse.json({ error: "Forbidden." }, { status: 403 })
     }
 
+    // Verify confirmation name
+    if (confirmName !== existing.name) {
+      return NextResponse.json(
+        { error: "Project name confirmation does not match." },
+        { status: 400 }
+      )
+    }
+
+    // 1. Delete the Google Drive folder
+    if (existing.driveFolderId) {
+      await deleteDriveFolder(existing.driveFolderId)
+    }
+
+    // 2. Delete from database
     await prisma.project.delete({ where: { id } })
 
     return NextResponse.json({
-      message: `Project "${existing.name}" deleted successfully.`,
+      message: `Project "${existing.name}" and its Drive folder deleted successfully.`,
     })
   } catch (err) {
     console.error("[projects/[id]:DELETE] Unexpected error:", err)

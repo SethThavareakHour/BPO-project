@@ -42,14 +42,14 @@ export function FolderCard({
         style={{
           clipPath: `polygon(
             0 0, 
-            43% 0, 
-            45% 4%,
-            47% 10%,
-            49% 18%,
-            51% 28%,
-            53% 36%,
-            55% 40%,
-            57% 41%,
+            63% 0, 
+            65% 4%,
+            67% 10%,
+            69% 18%,
+            71% 28%,
+            73% 36%,
+            75% 40%,
+            77% 41%,
             100% 41%, 
             100% 100%, 
             0 100%
@@ -59,9 +59,9 @@ export function FolderCard({
       </div>
 
       {/* 5. Flap Content Overlay (White text on top of the blue flap) */}
-      <div className="absolute top-[40%] left-0 right-0 bottom-0 z-20 px-5 pb-5 pt-1 flex flex-col justify-end">
+      <div className="absolute top-[28%] left-0 right-0 bottom-0 z-20 px-5 pb-5 pt-1 flex flex-col justify-between">
         {contentTitle && (
-          <div className="text-lg font-black text-white mb-1.5 drop-shadow-sm tracking-wide leading-tight">
+          <div className="text-lg font-black text-white drop-shadow-sm tracking-wide leading-[1.1] line-clamp-3 max-w-[55%] break-words">
             {contentTitle}
           </div>
         )}

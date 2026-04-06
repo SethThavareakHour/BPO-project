@@ -10,14 +10,14 @@ function getDriveClient() {
   if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || !privateKey) {
     throw new Error(
       "Missing Google Drive credentials. " +
-        "Set GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_PRIVATE_KEY in your .env file.",
+      "Set GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_PRIVATE_KEY in your .env file.",
     );
   }
 
   const auth = new google.auth.JWT({
     email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
     key: privateKey,
-    scopes: ["https://www.googleapis.com/auth/drive.readonly"],
+    scopes: ["https://www.googleapis.com/auth/drive"],
   });
 
   return google.drive({ version: "v3", auth });
@@ -111,6 +111,35 @@ async function extractTextFromDOCX(buffer: Buffer): Promise<string> {
 }
 
 // ─────────────────────────────────────────────
+// Extract text/CSV from an Excel buffer
+// ─────────────────────────────────────────────
+async function extractTextFromExcel(buffer: Buffer): Promise<string> {
+  const xlsx = await import("xlsx");
+  const workbook = xlsx.read(buffer, { type: "buffer" });
+  let fullText = "";
+
+  for (const sheetName of workbook.SheetNames) {
+    const sheet = workbook.Sheets[sheetName];
+    // Convert to CSV as it preserves structure better than raw text for AI
+    const csv = xlsx.utils.sheet_to_csv(sheet);
+    fullText += `--- Sheet: ${sheetName} ---\n${csv}\n\n`;
+  }
+  return fullText;
+}
+
+// ─────────────────────────────────────────────
+// Export a Google Sheet as CSV
+// ─────────────────────────────────────────────
+async function exportGoogleSheetAsCSV(fileId: string): Promise<string> {
+  const drive = getDriveClient();
+  const response = await drive.files.export(
+    { fileId, mimeType: "text/csv" },
+    { responseType: "arraybuffer" },
+  );
+  return Buffer.from(response.data as ArrayBuffer).toString("utf-8");
+}
+
+// ─────────────────────────────────────────────
 // Main: download + extract text from any supported file
 // Supported types:
 //   - application/pdf
@@ -127,8 +156,13 @@ export async function extractTextFromFile(
     return exportGoogleDocAsText(fileId);
   }
 
-  // Plain text
-  if (mimeType === "text/plain") {
+  // Google Sheets — export as CSV
+  if (mimeType === "application/vnd.google-apps.spreadsheet") {
+    return exportGoogleSheetAsCSV(fileId);
+  }
+
+  // Plain text / CSV
+  if (mimeType === "text/plain" || mimeType === "text/csv") {
     const buffer = await downloadFileBytes(fileId);
     return buffer.toString("utf-8");
   }
@@ -148,9 +182,18 @@ export async function extractTextFromFile(
     return extractTextFromDOCX(buffer);
   }
 
+  // Excel (XLSX / XLS)
+  if (
+    mimeType === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+    mimeType === "application/vnd.ms-excel"
+  ) {
+    const buffer = await downloadFileBytes(fileId);
+    return extractTextFromExcel(buffer);
+  }
+
   throw new Error(
     `Unsupported file type: "${mimeType}". ` +
-      "Only PDF, DOCX, Google Docs, and plain text files are supported.",
+    "Supported: PDF, Word, Excel, CSV, Google Docs, and Google Sheets.",
   );
 }
 
@@ -219,5 +262,88 @@ export async function validateFolderAccess(folderId: string): Promise<{
       valid: false,
       error: `Cannot access folder: ${message}. Make sure you have shared it with the service account email.`,
     };
+  }
+}
+
+// ─────────────────────────────────────────────
+// Create a new folder and share it with a user
+// ─────────────────────────────────────────────
+export async function createDriveFolder(
+  folderName: string,
+  shareWithEmails: string[] = [],
+): Promise<string> {
+  const drive = getDriveClient();
+
+  // 1. Create the folder in the Service Account's drive
+  const response = await drive.files.create({
+    requestBody: {
+      name: folderName,
+      mimeType: "application/vnd.google-apps.folder",
+    },
+    fields: "id",
+  });
+
+  const folderId = response.data.id;
+  if (!folderId) {
+    throw new Error("Failed to create Google Drive folder");
+  }
+
+  // 2. Share with the users as Editors so they can view and upload
+  for (const email of shareWithEmails) {
+    if (!email) continue;
+    try {
+      await drive.permissions.create({
+        fileId: folderId,
+        requestBody: {
+          role: "writer",
+          type: "user",
+          emailAddress: email,
+        },
+        // We set this to true so users get an email
+        // and the folder shows up in their "Shared with me" section
+        sendNotificationEmail: true,
+      });
+    } catch (err) {
+      console.error(`Failed to share folder with ${email}`, err);
+    }
+  }
+
+  return folderId;
+}
+
+// ─────────────────────────────────────────────
+// Delete a Google Drive folder
+// ─────────────────────────────────────────────
+export async function deleteDriveFolder(folderId: string): Promise<void> {
+  const drive = getDriveClient();
+  try {
+    // We 'trash' the folder instead of absolute delete for safety
+    await drive.files.update({
+      fileId: folderId,
+      requestBody: {
+        trashed: true,
+      },
+    });
+  } catch (err) {
+    console.error(`Failed to delete Drive folder ${folderId}:`, err);
+    // We don't throw here to avoid failing the whole project deletion
+    // if the Drive folder was already manually deleted or moved.
+  }
+}
+
+// ─────────────────────────────────────────────
+// Rename a Google Drive folder
+// ─────────────────────────────────────────────
+export async function renameDriveFolder(folderId: string, newFolderName: string): Promise<void> {
+  const drive = getDriveClient();
+  try {
+    await drive.files.update({
+      fileId: folderId,
+      requestBody: {
+        name: newFolderName,
+      },
+    });
+  } catch (err) {
+    console.error(`Failed to rename Drive folder ${folderId}:`, err);
   }
 }

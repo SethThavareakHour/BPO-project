@@ -1,5 +1,5 @@
-import { generateText } from "ai";
-import { openai } from "@ai-sdk/openai";
+import { generateText } from "ai"
+import { createOpenAI } from "@ai-sdk/openai"
 import {
   SRS_REVIEW_PROMPT,
   OPPM_REVIEW_PROMPT,
@@ -17,8 +17,20 @@ import type { AIReport } from "@/types";
 //   google("gemini-1.5-pro")                 → npm install @ai-sdk/google
 // ─────────────────────────────────────────────
 function getModel() {
-  const modelName = process.env.AI_MODEL ?? "gpt-4o";
-  return openai(modelName);
+  const modelName = process.env.AI_MODEL ?? "google/gemini-2.0-flash-001";
+  const apiKey = process.env.OPENROUTER_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("OPENROUTER_API_KEY is missing in environmental variables.");
+  }
+
+  // Configure Vercel AI SDK to use OpenRouter as the OpenAI-compatible provider
+  const provider = createOpenAI({
+    apiKey,
+    baseURL: "https://openrouter.ai/api/v1",
+  });
+
+  return provider(modelName);
 }
 
 // ─────────────────────────────────────────────

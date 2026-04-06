@@ -88,6 +88,8 @@ const projectSchema = z.object({
     .trim()
     .optional(),
   driveFolderId: z.string().trim().optional(),
+  studentName: z.string().trim().optional(),
+  studentEmail: z.string().trim().optional(),
 });
 
 type ProjectFormData = z.infer<typeof projectSchema>;
@@ -240,6 +242,8 @@ function ProjectFormDialog({
     name: "",
     description: "",
     driveFolderId: "",
+    studentName: "",
+    studentEmail: "",
   });
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -251,9 +255,17 @@ function ProjectFormDialog({
         name: editProject.name,
         description: editProject.description ?? "",
         driveFolderId: editProject.driveFolderId ?? "",
+        studentName: "", // We don't have student editing in this unified form yet
+        studentEmail: "",
       });
     } else {
-      setFormData({ name: "", description: "", driveFolderId: "" });
+      setFormData({ 
+        name: "", 
+        description: "", 
+        driveFolderId: "", 
+        studentName: "", 
+        studentEmail: "" 
+      });
     }
     setFieldErrors({});
   }, [editProject, open]);
@@ -297,6 +309,8 @@ function ProjectFormDialog({
           name: parsed.data.name,
           description: parsed.data.description || null,
           driveFolderId: parsed.data.driveFolderId || null,
+          studentName: parsed.data.studentName || null,
+          studentEmail: parsed.data.studentEmail || null,
         }),
       });
 
@@ -333,33 +347,33 @@ function ProjectFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg rounded-2xl">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-lg rounded-2xl max-h-[90vh] overflow-y-auto flex flex-col">
+        <DialogHeader className="shrink-0">
           <DialogTitle className="text-lg font-semibold">
             {isEditing ? "Edit project" : "Create new project"}
           </DialogTitle>
           <DialogDescription>
             {isEditing
               ? "Update the project details below."
-              : "Fill in the details to create a new student project."}
+              : "Creating this project will automatically generate a Google Drive folder for managing student documents."}
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} noValidate className="space-y-4 py-2">
+        <form onSubmit={handleSubmit} noValidate className="space-y-2.5 py-1">
           {/* Name */}
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <Label htmlFor="proj-name">
               Project name <span className="text-red-500">*</span>
             </Label>
             <Input
               id="proj-name"
               name="name"
-              placeholder="e.g. Group 5 — Smart Parking System"
+              placeholder="Enter project title..."
               value={formData.name}
               onChange={handleChange}
               disabled={isLoading}
               className={cn(
-                "rounded-xl",
+                "rounded-xl h-9",
                 fieldErrors.name && "border-red-400 focus-visible:ring-red-400",
               )}
             />
@@ -369,7 +383,7 @@ function ProjectFormDialog({
           </div>
 
           {/* Description */}
-          <div className="space-y-1.5">
+          <div className="space-y-1">
             <Label htmlFor="proj-description">
               Description{" "}
               <span className="text-gray-400 font-normal">(optional)</span>
@@ -377,13 +391,13 @@ function ProjectFormDialog({
             <Textarea
               id="proj-description"
               name="description"
-              placeholder="Brief description of the project, group members, or semester..."
+              placeholder="Provide a brief overview of the project objectives and scope..."
               value={formData.description}
               onChange={handleChange}
               disabled={isLoading}
-              rows={3}
+              rows={5}
               className={cn(
-                "resize-none rounded-xl",
+                "resize-none rounded-xl break-words whitespace-pre-wrap overflow-y-auto h-[120px] custom-scrollbar",
                 fieldErrors.description &&
                 "border-red-400 focus-visible:ring-red-400",
               )}
@@ -396,42 +410,44 @@ function ProjectFormDialog({
               ) : (
                 <span />
               )}
-              <p className="text-[11px] text-gray-400 ml-auto">
+              <p className="text-[10px] text-gray-400 ml-auto">
                 {(formData.description ?? "").length}/500
               </p>
             </div>
           </div>
 
-          {/* Drive Folder ID */}
-          <div className="space-y-1.5">
-            <Label htmlFor="proj-drive">
-              Google Drive Folder ID{" "}
-              <span className="text-gray-400 font-normal">(optional)</span>
-            </Label>
-            <Input
-              id="proj-drive"
-              name="driveFolderId"
-              placeholder="e.g. 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms"
-              value={formData.driveFolderId}
-              onChange={handleChange}
-              disabled={isLoading}
-              className={cn(
-                "font-mono text-sm rounded-xl",
-                fieldErrors.driveFolderId &&
-                "border-red-400 focus-visible:ring-red-400",
-              )}
-            />
-            {fieldErrors.driveFolderId ? (
-              <p className="text-xs text-red-600">
-                {fieldErrors.driveFolderId}
+          {!isEditing && (
+            <div className="flex flex-col gap-2 pt-1 border-t border-gray-100">
+              <div className="space-y-1">
+                <Label htmlFor="std-name" className="text-sm">Student Name</Label>
+                <Input
+                  id="std-name"
+                  name="studentName"
+                  placeholder="Enter student's full name..."
+                  value={formData.studentName}
+                  onChange={handleChange}
+                  disabled={isLoading}
+                  className="rounded-xl h-9 text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="std-email" className="text-sm">Student Email</Label>
+                <Input
+                  id="std-email"
+                  name="studentEmail"
+                  type="email"
+                  placeholder="Enter student email..."
+                  value={formData.studentEmail}
+                  onChange={handleChange}
+                  disabled={isLoading}
+                  className="rounded-xl h-9 text-sm"
+                />
+              </div>
+              <p className="text-[10px] text-gray-400 italic">
+                If provided, a Google Drive folder will be created and shared with this student automatically.
               </p>
-            ) : (
-              <p className="text-[11px] text-gray-400">
-                Copy the folder ID from the Google Drive URL. Share the folder
-                with your service account email first.
-              </p>
-            )}
-          </div>
+            </div>
+          )}
 
           <DialogFooter className="gap-2 pt-2">
             <Button
@@ -481,13 +497,19 @@ function DeleteConfirmDialog({
   onSuccess: () => void;
 }) {
   const [isLoading, setIsLoading] = useState(false);
+  const [confirmName, setConfirmName] = useState("");
+
+  // Clear input when dialog opens/closes
+  useEffect(() => {
+    if (!open) setConfirmName("");
+  }, [open]);
 
   async function handleDelete() {
     if (!project) return;
     setIsLoading(true);
 
     try {
-      const res = await fetch(`/api/projects/${project.id}`, {
+      const res = await fetch(`/api/projects/${project.id}?confirmName=${encodeURIComponent(confirmName)}`, {
         method: "DELETE",
       });
       const data = await res.json();
@@ -507,6 +529,8 @@ function DeleteConfirmDialog({
     }
   }
 
+  const isMatched = confirmName === project?.name;
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md rounded-2xl">
@@ -519,10 +543,25 @@ function DeleteConfirmDialog({
             <span className="font-semibold text-gray-800">
               &quot;{project?.name}&quot;
             </span>
-            ? This will permanently remove all students, documents, and reviews
-            associated with this project. This action cannot be undone.
+            ? This will permanently remove all students, documents, and reviews. 
+            The associated <strong>Google Drive folder will also be deleted</strong>.
           </DialogDescription>
         </DialogHeader>
+
+        <div className="space-y-3 py-2">
+          <p className="text-xs text-gray-500">
+            Please type <span className="font-mono font-bold text-gray-900 selection:bg-yellow-200">
+              {project?.name}
+            </span> to confirm:
+          </p>
+          <Input
+            value={confirmName}
+            onChange={(e) => setConfirmName(e.target.value)}
+            placeholder="Type project name here"
+            className="rounded-xl border-red-100 focus-visible:ring-red-500"
+            autoFocus
+          />
+        </div>
 
         <DialogFooter className="gap-2 mt-2">
           <Button
@@ -536,8 +575,11 @@ function DeleteConfirmDialog({
           <Button
             variant="destructive"
             onClick={handleDelete}
-            disabled={isLoading}
-            className="min-w-[100px] rounded-xl"
+            disabled={isLoading || !isMatched}
+            className={cn(
+              "min-w-[100px] rounded-xl transition-all shadow-sm",
+              !isMatched && "opacity-50 grayscale hover:opacity-50"
+            )}
           >
             {isLoading ? (
               <>

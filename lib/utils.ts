@@ -154,10 +154,24 @@ export function mimeTypeToLabel(mimeType: string): string {
       return "PDF";
     case "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
       return "DOCX";
+    case "application/vnd.ms-excel":
+    case "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet":
+      return "Excel";
+    case "application/vnd.openxmlformats-officedocument.presentationml.presentation":
+      return "PPTX";
     case "application/vnd.google-apps.document":
       return "Google Doc";
+    case "application/vnd.google-apps.spreadsheet":
+      return "Google Sheet";
+    case "application/vnd.google-apps.presentation":
+      return "Google Slide";
     case "text/plain":
-      return "Text";
+    case "text/csv":
+      return "Text/CSV";
+    case "image/png":
+    case "image/jpeg":
+    case "image/webp":
+      return "Image";
     default:
       return mimeType.split("/").pop()?.toUpperCase() ?? "File";
   }
@@ -167,8 +181,17 @@ export function isSupportedMimeType(mimeType: string): boolean {
   const supported = [
     "application/pdf",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "application/vnd.ms-excel",
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     "application/vnd.google-apps.document",
+    "application/vnd.google-apps.spreadsheet",
+    "application/vnd.google-apps.presentation",
     "text/plain",
+    "text/csv",
+    "image/png",
+    "image/jpeg",
+    "image/webp",
   ];
   return supported.includes(mimeType);
 }
