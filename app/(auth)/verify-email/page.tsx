@@ -6,8 +6,8 @@ import VerifyEmailClient from "./client";
 import { Card, CardContent } from "@/components/ui/card";
 
 export const metadata: Metadata = {
-  title: "Verify Email | AdvisorDesk",
-  description: "Verify your AdvisorDesk email address",
+  title: "Verify Email | Technical BPO",
+  description: "Verify your Technical BPO email address",
 };
 
 export default function VerifyEmailPage() {

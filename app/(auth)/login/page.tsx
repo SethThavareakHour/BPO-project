@@ -4,7 +4,7 @@ import { LoginForm } from "@/components/auth/login-form"
 
 export const metadata: Metadata = {
   title: "Sign In",
-  description: "Sign in to your AdvisorDesk account",
+  description: "Sign in to your Technical BPO account",
 }
 
 export default function LoginPage() {

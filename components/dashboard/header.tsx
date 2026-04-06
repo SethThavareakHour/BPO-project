@@ -149,10 +149,12 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
                 </div>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" sideOffset={8} className="w-56 p-2 rounded-2xl shadow-xl border-gray-100">
-                <DropdownMenuLabel className="font-normal px-2 py-2">
-                  <p className="text-sm font-bold text-gray-900">{user.name}</p>
-                  <p className="text-xs text-gray-500 truncate">{user.email}</p>
-                </DropdownMenuLabel>
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel className="font-normal px-2 py-2">
+                    <p className="text-sm font-bold text-gray-900">{user.name}</p>
+                    <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                  </DropdownMenuLabel>
+                </DropdownMenuGroup>
                 <DropdownMenuSeparator className="bg-gray-50" />
                 <DropdownMenuGroup>
                   <DropdownMenuItem className="rounded-xl focus:bg-blue-50 focus:text-blue-600 cursor-pointer">

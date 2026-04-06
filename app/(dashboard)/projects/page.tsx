@@ -595,11 +595,11 @@ export default function ProjectsPage() {
   return (
     <div className="px-8 py-8 max-w-7xl mx-auto w-full space-y-6 animate-fade-in-up">
       {/* ── Page header (Subtle but Clear) ─────────────────────────── */}
-      <div className="flex items-center gap-2.5 text-gray-900">
-        <FolderKanban className="h-5 w-5" />
-        <span className="text-base font-black tracking-tight">
+      <div className="flex items-center gap-3 text-gray-900">
+        <FolderKanban className="h-7 w-7" />
+        <h1 className="text-2xl font-black tracking-tight">
           Student Projects
-        </span>
+        </h1>
       </div>
 
       {/* ── Action Bar (Search & Create) ─────────────────────────────── */}

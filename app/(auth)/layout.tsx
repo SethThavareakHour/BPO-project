@@ -4,8 +4,8 @@ import { BookOpen } from "lucide-react"
 
 export const metadata: Metadata = {
   title: {
-    template: "%s | AdvisorDesk",
-    default: "AdvisorDesk",
+    template: "%s | Technical BPO",
+    default: "Technical BPO",
   },
   description: "Advisor Review System — SRS & OPPM document review platform",
 }
@@ -24,7 +24,7 @@ export default function AuthLayout({
             <BookOpen className="h-[18px] w-[18px] text-white" />
           </div>
           <div className="leading-tight">
-            <p className="text-[15px] font-bold text-gray-900 tracking-tight">AdvisorDesk</p>
+            <p className="text-[15px] font-bold text-gray-900 tracking-tight">Technical BPO</p>
           </div>
         </Link>
       </header>
@@ -36,7 +36,7 @@ export default function AuthLayout({
 
       {/* ── Footer ───────────────────────────────────────────────────── */}
       <footer className="py-4 text-center text-xs text-gray-400">
-        &copy; <span suppressHydrationWarning>{new Date().getFullYear()}</span> AdvisorDesk. All rights reserved.
+        &copy; <span suppressHydrationWarning>{new Date().getFullYear()}</span> Technical BPO. All rights reserved.
       </footer>
     </div>
   )
