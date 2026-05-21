@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { generateFeedbackFromReport } from "@/lib/ai";
+import {
+  ReviewProviderUnavailableError,
+  generateFeedbackFromReport,
+  isReviewProviderConfigured,
+} from "@/lib/ai";
 import type { AIReport } from "@/types";
 
 const feedbackSchema = z.object({
@@ -147,6 +151,16 @@ export async function POST(
     }
 
     // ── 6. AI-generated feedback ──────────────────────────────────────
+    if (!isReviewProviderConfigured()) {
+      return NextResponse.json(
+        {
+          error:
+            "AI feedback is not configured yet. Manual feedback still works.",
+        },
+        { status: 501 },
+      );
+    }
+
     // The AI report must already exist (document must have been reviewed first)
     if (!review.aiReport) {
       return NextResponse.json(
@@ -168,6 +182,16 @@ export async function POST(
         review.document.project.name,
       );
     } catch (aiError) {
+      if (aiError instanceof ReviewProviderUnavailableError) {
+        return NextResponse.json(
+          {
+            error:
+              "AI feedback is not configured yet. Manual feedback still works.",
+          },
+          { status: 501 },
+        );
+      }
+
       const message =
         aiError instanceof Error ? aiError.message : String(aiError);
 

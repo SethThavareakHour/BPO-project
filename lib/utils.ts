@@ -119,6 +119,32 @@ export function docStatusLabel(status: string): string {
   }
 }
 
+export function extractionStatusToColor(status?: string | null): string {
+  switch (status) {
+    case "EXTRACTED":
+      return "bg-green-50 text-green-700 border-green-200";
+    case "FAILED":
+      return "bg-red-50 text-red-700 border-red-200";
+    case "PENDING":
+      return "bg-amber-50 text-amber-700 border-amber-200";
+    default:
+      return "bg-gray-50 text-gray-500 border-gray-200";
+  }
+}
+
+export function extractionStatusLabel(status?: string | null): string {
+  switch (status) {
+    case "EXTRACTED":
+      return "Extracted";
+    case "FAILED":
+      return "Extraction failed";
+    case "PENDING":
+      return "Extraction pending";
+    default:
+      return "Not extracted";
+  }
+}
+
 // ─────────────────────────────────────────────
 // String helpers
 // ─────────────────────────────────────────────

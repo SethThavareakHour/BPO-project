@@ -60,10 +60,12 @@ import {
   formatDateTime,
   docStatusLabel,
   docStatusToColor,
+  extractionStatusLabel,
+  extractionStatusToColor,
   mimeTypeToLabel,
   fetcher,
 } from "@/lib/utils";
-import type { ApiSuccess } from "@/types";
+import type { ApiSuccess, DriveScanResult } from "@/types";
 
 // ─────────────────────────────────────────────
 // Types
@@ -80,9 +82,27 @@ interface Student {
 interface ReviewSummary {
   id: string;
   isApproved: boolean;
+  approvedAt: string | null;
   feedbackType: string | null;
   feedback: string | null;
   createdAt: string;
+}
+
+interface DocumentExtractionSummary {
+  id: string;
+  status: "PENDING" | "EXTRACTED" | "FAILED";
+  method:
+    | "GOOGLE_EXPORT"
+    | "PDF_TEXT"
+    | "DOCX"
+    | "XLSX"
+    | "CSV"
+    | "TEXT"
+    | "DEEPSEEK_OCR"
+    | "UNSUPPORTED";
+  error: string | null;
+  sourceModifiedTime: string | null;
+  extractedAt: string | null;
 }
 
 interface Document {
@@ -93,9 +113,18 @@ interface Document {
   mimeType: string | null;
   driveUrl: string | null;
   status: "PENDING" | "REVIEWING" | "REVIEWED" | "APPROVED";
+  driveCreatedTime: string | null;
+  driveModifiedTime: string | null;
+  driveLastSeenAt: string | null;
+  driveLastSyncedAt: string | null;
+  driveSyncStatus: "NEW" | "MODIFIED" | "SYNCED";
+  needsReview: boolean;
+  reviewCount: number;
+  lastReviewedAt: string | null;
   projectId: string;
   createdAt: string;
   updatedAt: string;
+  extraction: DocumentExtractionSummary | null;
   review: ReviewSummary | null;
 }
 
@@ -186,6 +215,76 @@ function DocStatusBadge({ status }: { status: Document["status"] }) {
     >
       {icon}
       {docStatusLabel(status)}
+    </Badge>
+  );
+}
+
+function DriveSyncBadge({ doc }: { doc: Document }) {
+  if (doc.driveSyncStatus === "NEW") {
+    return (
+      <Badge
+        variant="outline"
+        className="border-emerald-200 bg-emerald-50 text-emerald-700 text-[11px]"
+      >
+        New in Drive
+      </Badge>
+    );
+  }
+
+  if (doc.driveSyncStatus === "MODIFIED") {
+    return (
+      <Badge
+        variant="outline"
+        className="border-amber-200 bg-amber-50 text-amber-700 text-[11px]"
+      >
+        Updated in Drive
+      </Badge>
+    );
+  }
+
+  if (doc.needsReview) {
+    return (
+      <Badge
+        variant="outline"
+        className="border-blue-200 bg-blue-50 text-blue-700 text-[11px]"
+      >
+        Needs review
+      </Badge>
+    );
+  }
+
+  return (
+    <Badge
+      variant="outline"
+      className="border-gray-200 bg-gray-50 text-gray-500 text-[11px]"
+    >
+      Synced
+    </Badge>
+  );
+}
+
+function ExtractionBadge({ extraction }: { extraction: Document["extraction"] }) {
+  const status = extraction?.status ?? null;
+  const label = extraction
+    ? `${extractionStatusLabel(status)}${
+        extraction.status === "EXTRACTED" ? ` (${extraction.method})` : ""
+      }`
+    : extractionStatusLabel(null);
+
+  return (
+    <Badge
+      variant="outline"
+      className={cn("gap-1 text-[11px]", extractionStatusToColor(status))}
+      title={extraction?.error ?? label}
+    >
+      {status === "EXTRACTED" ? (
+        <CheckCircle2 className="h-3 w-3" />
+      ) : status === "FAILED" ? (
+        <AlertCircle className="h-3 w-3" />
+      ) : (
+        <Clock className="h-3 w-3" />
+      )}
+      {label}
     </Badge>
   );
 }
@@ -753,13 +852,6 @@ function DocumentsTab({
   const [typeFilter, setTypeFilter] = useState<"ALL" | "SRS" | "OPPM">("ALL");
 
   async function handleScanDrive() {
-    if (!project.driveFolderId) {
-      toast.error(
-        "No Google Drive folder linked. Edit the project to add a Folder ID first.",
-      );
-      return;
-    }
-
     setIsScanning(true);
 
     try {
@@ -769,23 +861,31 @@ function DocumentsTab({
         body: JSON.stringify({ projectId: project.id }),
       });
 
-      const data = await res.json();
+      const data = (await res.json()) as ApiSuccess<DriveScanResult> & {
+        error?: string;
+      };
 
       if (!res.ok) {
         toast.error(data.error ?? "Drive scan failed.");
         return;
       }
 
-      const { newFiles, skippedFiles, message } = data.data;
+      const { newFiles, modifiedFiles, summary, message } = data.data;
       toast.success(message);
 
-      if (skippedFiles?.length > 0) {
+      if (summary.failed > 0 || summary.skipped > 0) {
         toast.warning(
-          `${skippedFiles.length} file${skippedFiles.length !== 1 ? "s" : ""} skipped (unsupported type).`,
+          `${summary.failed} failed, ${summary.skipped} skipped, ${summary.approvedIgnored} approved ignored.`,
         );
       }
 
-      if (newFiles?.length > 0) {
+      if (
+        newFiles?.length > 0 ||
+        modifiedFiles?.length > 0 ||
+        summary.extracted > 0 ||
+        summary.reviewed > 0 ||
+        summary.approvedIgnored > 0
+      ) {
         onRefresh();
       }
     } catch {
@@ -852,17 +952,17 @@ function DocumentsTab({
           size="sm"
           variant="outline"
           onClick={handleScanDrive}
-          disabled={isScanning || !project.driveFolderId}
+          disabled={isScanning}
           title={
             !project.driveFolderId
-              ? "Link a Drive folder to this project first"
+              ? "Scan the configured default Drive folder"
               : "Scan for new files uploaded by students"
           }
           className={cn(
             "gap-1.5 text-xs",
             project.driveFolderId
               ? "border-indigo-200 text-indigo-700 hover:bg-indigo-50"
-              : "opacity-50 cursor-not-allowed",
+              : "border-gray-200 text-gray-600 hover:bg-gray-50",
           )}
         >
           {isScanning ? (
@@ -883,8 +983,8 @@ function DocumentsTab({
               No Drive folder linked
             </p>
             <p className="mt-0.5 text-xs text-amber-700">
-              Link a Google Drive Folder ID to this project to enable automatic
-              file detection when students upload their SRS or OPPM documents.
+              Scans will use the configured default Google Drive folder until a
+              project-specific Folder ID is added.
             </p>
           </div>
         </div>
@@ -921,7 +1021,13 @@ function DocumentsTab({
                   Status
                 </TableHead>
                 <TableHead className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
-                  Detected
+                  Drive
+                </TableHead>
+                <TableHead className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                  Extraction
+                </TableHead>
+                <TableHead className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                  Modified
                 </TableHead>
                 <TableHead className="w-36 text-right text-xs font-semibold text-gray-600 uppercase tracking-wide">
                   Actions
@@ -964,8 +1070,20 @@ function DocumentsTab({
                     <DocStatusBadge status={doc.status} />
                   </TableCell>
 
+                  <TableCell>
+                    <DriveSyncBadge doc={doc} />
+                  </TableCell>
+
+                  <TableCell>
+                    <ExtractionBadge extraction={doc.extraction} />
+                  </TableCell>
+
                   <TableCell className="text-xs text-gray-400">
-                    <span suppressHydrationWarning>{formatDateTime(doc.createdAt)}</span>
+                    <span suppressHydrationWarning>
+                      {doc.driveModifiedTime
+                        ? formatDateTime(doc.driveModifiedTime)
+                        : formatDateTime(doc.createdAt)}
+                    </span>
                   </TableCell>
 
                   <TableCell className="text-right">
@@ -984,19 +1102,27 @@ function DocumentsTab({
                         </Button>
                       )}
 
-                      {/* Generate / Re-generate AI review */}
-                      {doc.type !== "UNKNOWN" && doc.status !== "APPROVED" && (
+                      {/* LLM review placeholder */}
+                      {doc.type !== "UNKNOWN" &&
+                        doc.status !== "APPROVED" &&
+                        !doc.review?.isApproved && (
                         <Button
                           variant="ghost"
                           size="sm"
                           className="h-7 px-2 text-xs text-violet-600 hover:bg-violet-50"
                           onClick={() => handleGenerateReview(doc)}
                           disabled={
+                            process.env.NEXT_PUBLIC_REVIEW_ENABLED !== "true" ||
                             generatingId === doc.id ||
-                            doc.status === "REVIEWING"
+                            doc.status === "REVIEWING" ||
+                            doc.extraction?.status !== "EXTRACTED"
                           }
                           title={
-                            doc.review
+                            process.env.NEXT_PUBLIC_REVIEW_ENABLED !== "true"
+                              ? "LLM review is not configured yet"
+                              : doc.extraction?.status !== "EXTRACTED"
+                              ? "Extract the document with a Drive scan before reviewing"
+                              : doc.review
                               ? "Re-generate AI review"
                               : "Generate AI review"
                           }
@@ -1008,7 +1134,9 @@ function DocumentsTab({
                           ) : (
                             <FileSearch className="mr-1 h-3 w-3" />
                           )}
-                          {generatingId === doc.id
+                          {process.env.NEXT_PUBLIC_REVIEW_ENABLED !== "true"
+                            ? "Review unavailable"
+                            : generatingId === doc.id
                             ? "Analysing…"
                             : doc.review
                               ? "Re-analyse"
@@ -1107,7 +1235,7 @@ export default function ProjectDetailPage() {
   const srsCount = project.documents.filter((d) => d.type === "SRS").length;
   const oppmCount = project.documents.filter((d) => d.type === "OPPM").length;
   const pendingCount = project.documents.filter((d) =>
-    ["PENDING", "REVIEWING", "REVIEWED"].includes(d.status),
+    d.needsReview || ["PENDING", "REVIEWING", "REVIEWED"].includes(d.status),
   ).length;
 
   return (

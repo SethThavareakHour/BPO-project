@@ -35,7 +35,12 @@ export async function GET(req: NextRequest) {
           : {}),
         // Map status filter to document status
         ...(statusFilter === "PENDING"
-          ? { status: { in: ["PENDING", "REVIEWING"] } }
+          ? {
+              OR: [
+                { needsReview: true },
+                { status: { in: ["PENDING", "REVIEWING"] } },
+              ],
+            }
           : statusFilter === "REVIEWED"
           ? { status: "REVIEWED" }
           : statusFilter === "APPROVED"
@@ -59,6 +64,10 @@ export async function GET(req: NextRequest) {
             mimeType: true,
             driveUrl: true,
             status: true,
+            needsReview: true,
+            driveSyncStatus: true,
+            driveModifiedTime: true,
+            lastReviewedAt: true,
             projectId: true,
             createdAt: true,
             updatedAt: true,
@@ -111,7 +120,10 @@ export async function GET(req: NextRequest) {
         where: {
           document: {
             project: { advisorId: session.user.id },
-            status: { in: ["PENDING", "REVIEWING"] },
+            OR: [
+              { needsReview: true },
+              { status: { in: ["PENDING", "REVIEWING"] } },
+            ],
           },
         },
       }),

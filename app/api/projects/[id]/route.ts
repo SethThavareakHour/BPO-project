@@ -50,10 +50,32 @@ export async function GET(
         documents: {
           orderBy: { createdAt: "desc" },
           include: {
+            extraction: {
+              select: {
+                id: true,
+                status: true,
+                method: true,
+                error: true,
+                sourceModifiedTime: true,
+                extractedAt: true,
+              },
+            },
+            scanEvents: {
+              orderBy: { createdAt: "desc" },
+              take: 10,
+              select: {
+                id: true,
+                eventType: true,
+                driveModifiedTime: true,
+                message: true,
+                createdAt: true,
+              },
+            },
             review: {
               select: {
                 id: true,
                 isApproved: true,
+                approvedAt: true,
                 feedbackType: true,
                 feedback: true,
                 createdAt: true,

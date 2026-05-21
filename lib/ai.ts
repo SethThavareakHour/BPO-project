@@ -7,6 +7,26 @@ import {
 } from "@/lib/prompts";
 import type { AIReport } from "@/types";
 
+export class ReviewProviderUnavailableError extends Error {
+  constructor() {
+    super(
+      "No LLM review provider is configured. Set LLM_PROVIDER=deepseek, DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, and AI_MODEL to enable AI reviews.",
+    );
+    this.name = "ReviewProviderUnavailableError";
+  }
+}
+
+export function isReviewProviderConfigured(): boolean {
+  const provider = process.env.LLM_PROVIDER?.toLowerCase();
+  if (provider === "deepseek") {
+    return Boolean(process.env.DEEPSEEK_API_KEY && process.env.AI_MODEL);
+  }
+  if (provider === "openrouter") {
+    return Boolean(process.env.OPENROUTER_API_KEY && process.env.AI_MODEL);
+  }
+  return false;
+}
+
 // ─────────────────────────────────────────────
 // Model Configuration
 // Swap the provider/model here when you decide on a specific one.
@@ -17,20 +37,173 @@ import type { AIReport } from "@/types";
 //   google("gemini-1.5-pro")                 → npm install @ai-sdk/google
 // ─────────────────────────────────────────────
 function getModel() {
-  const modelName = process.env.AI_MODEL ?? "google/gemini-2.0-flash-001";
-  const apiKey = process.env.OPENROUTER_API_KEY;
+  const providerName = process.env.LLM_PROVIDER?.toLowerCase();
+  const modelName = process.env.AI_MODEL;
 
-  if (!apiKey) {
-    throw new Error("OPENROUTER_API_KEY is missing in environmental variables.");
+  if (!modelName) {
+    throw new ReviewProviderUnavailableError();
   }
 
-  // Configure Vercel AI SDK to use OpenRouter as the OpenAI-compatible provider
-  const provider = createOpenAI({
-    apiKey,
-    baseURL: "https://openrouter.ai/api/v1",
+  if (providerName === "deepseek") {
+    const apiKey = process.env.DEEPSEEK_API_KEY;
+    if (!apiKey) throw new ReviewProviderUnavailableError();
+
+    const provider = createOpenAI({
+      apiKey,
+      baseURL: process.env.DEEPSEEK_BASE_URL ?? "https://api.deepseek.com",
+    });
+
+    return provider(modelName);
+  }
+
+  if (providerName === "openrouter") {
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    if (!apiKey) throw new ReviewProviderUnavailableError();
+
+    const provider = createOpenAI({
+      apiKey,
+      baseURL: "https://openrouter.ai/api/v1",
+    });
+
+    return provider(modelName);
+  }
+
+  throw new ReviewProviderUnavailableError();
+}
+
+async function generateDeepSeekText({
+  messages,
+  temperature,
+  maxOutputTokens,
+}: {
+  messages: Array<{ role: "system" | "user"; content: string }>;
+  temperature: number;
+  maxOutputTokens: number;
+}): Promise<string> {
+  const apiKey = process.env.DEEPSEEK_API_KEY;
+  const modelName = process.env.AI_MODEL;
+
+  if (!apiKey || !modelName) {
+    throw new ReviewProviderUnavailableError();
+  }
+
+  const baseURL = process.env.DEEPSEEK_BASE_URL ?? "https://api.deepseek.com";
+  const response = await fetch(`${baseURL.replace(/\/$/, "")}/chat/completions`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: modelName,
+      messages,
+      temperature,
+      max_tokens: maxOutputTokens,
+    }),
   });
 
-  return provider(modelName);
+  const body = (await response.json().catch(() => null)) as
+    | {
+        choices?: Array<{ message?: { content?: string } }>;
+        error?: { message?: string };
+      }
+    | null;
+
+  if (!response.ok) {
+    throw new Error(
+      body?.error?.message ??
+        `DeepSeek request failed with HTTP ${response.status}.`,
+    );
+  }
+
+  return body?.choices?.[0]?.message?.content?.trim() ?? "";
+}
+
+async function generateConfiguredText({
+  messages,
+  temperature,
+  maxOutputTokens,
+}: {
+  messages: Array<{ role: "system" | "user"; content: string }>;
+  temperature: number;
+  maxOutputTokens: number;
+}): Promise<string> {
+  if (process.env.LLM_PROVIDER?.toLowerCase() === "deepseek") {
+    return generateDeepSeekText({ messages, temperature, maxOutputTokens });
+  }
+
+  const { text } = await generateText({
+    model: getModel(),
+    messages,
+    temperature,
+    maxOutputTokens,
+  });
+
+  return text;
+}
+
+export async function ocrImageWithDeepSeek(
+  buffer: Buffer,
+  mimeType: string,
+): Promise<string> {
+  if (!isReviewProviderConfigured()) {
+    throw new ReviewProviderUnavailableError();
+  }
+
+  const providerName = process.env.LLM_PROVIDER?.toLowerCase();
+  if (providerName !== "deepseek") {
+    throw new ReviewProviderUnavailableError();
+  }
+
+  const apiKey = process.env.DEEPSEEK_API_KEY;
+  const modelName = process.env.AI_MODEL;
+
+  if (!apiKey || !modelName) {
+    throw new ReviewProviderUnavailableError();
+  }
+
+  const baseURL = process.env.DEEPSEEK_BASE_URL ?? "https://api.deepseek.com";
+  const response = await fetch(`${baseURL.replace(/\/$/, "")}/chat/completions`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: modelName,
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text:
+                "Extract all readable text from this document image. Return only the extracted text, preserving headings, labels, table rows, and list items as plain text.",
+            },
+            {
+              type: "image_url",
+              image_url: {
+                url: `data:${mimeType};base64,${buffer.toString("base64")}`,
+              },
+            },
+          ],
+        },
+      ],
+      temperature: 0,
+    }),
+  });
+
+  const body = (await response.json().catch(() => null)) as
+    | { choices?: Array<{ message?: { content?: string } }>; error?: { message?: string } }
+    | null;
+
+  if (!response.ok) {
+    throw new Error(
+      body?.error?.message ?? `DeepSeek OCR request failed with HTTP ${response.status}.`,
+    );
+  }
+
+  return body?.choices?.[0]?.message?.content?.trim() ?? "";
 }
 
 // ─────────────────────────────────────────────
@@ -51,8 +224,7 @@ export async function reviewDocument(
         "\n\n[Document truncated due to length. Please review the visible portion.]"
       : content;
 
-  const { text } = await generateText({
-    model: getModel(),
+  const text = await generateConfiguredText({
     messages: [
       {
         role: "system",
@@ -83,10 +255,7 @@ export async function reviewDocument(
     );
   }
 
-  // Stamp generatedAt if the model forgot it
-  if (!report.generatedAt) {
-    report.generatedAt = new Date().toISOString();
-  }
+  report.generatedAt = new Date().toISOString();
 
   return report;
 }
@@ -100,8 +269,7 @@ export async function generateFeedbackFromReport(
   documentName: string,
   projectName: string,
 ): Promise<string> {
-  const { text } = await generateText({
-    model: getModel(),
+  const text = await generateConfiguredText({
     messages: [
       {
         role: "system",

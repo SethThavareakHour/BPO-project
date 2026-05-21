@@ -88,10 +88,21 @@ model Document {
   driveUrl    String?
   status      DocStatus    @default(PENDING)
 
+  driveCreatedTime  DateTime?
+  driveModifiedTime DateTime?
+  driveLastSeenAt   DateTime?
+  driveLastSyncedAt DateTime?
+  driveSyncStatus   DriveSyncStatus @default(NEW)
+  needsReview       Boolean         @default(true)
+  reviewCount       Int             @default(0)
+  lastReviewedAt    DateTime?
+
   projectId String
   project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  review Review?
+  extraction DocumentExtraction?
+  scanEvents DocumentScanEvent[]
+  review     Review?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -108,6 +119,68 @@ enum DocStatus {
   REVIEWING
   REVIEWED
   APPROVED
+}
+
+enum DriveSyncStatus {
+  NEW
+  MODIFIED
+  SYNCED
+}
+
+model DocumentExtraction {
+  id                 String           @id @default(cuid())
+  documentId         String           @unique
+  text               String?
+  status             ExtractionStatus @default(PENDING)
+  method             ExtractionMethod
+  error              String?
+  sourceModifiedTime DateTime?
+  extractedAt        DateTime?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+model DocumentScanEvent {
+  id                String        @id @default(cuid())
+  documentId        String
+  eventType         ScanEventType
+  driveModifiedTime DateTime?
+  message           String?
+  createdAt         DateTime      @default(now())
+
+  document Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+}
+
+enum ExtractionStatus {
+  PENDING
+  EXTRACTED
+  FAILED
+}
+
+enum ExtractionMethod {
+  GOOGLE_EXPORT
+  PDF_TEXT
+  DOCX
+  XLSX
+  CSV
+  TEXT
+  DEEPSEEK_OCR
+  UNSUPPORTED
+}
+
+enum ScanEventType {
+  IMPORTED
+  MODIFIED
+  UNCHANGED
+  EXTRACTED
+  EXTRACTION_FAILED
+  REVIEWED
+  REVIEW_FAILED
+  APPROVED_IGNORED
 }
 
 // ─────────────────────────────────────────────

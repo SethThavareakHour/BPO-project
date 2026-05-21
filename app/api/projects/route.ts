@@ -60,6 +60,7 @@ export async function GET() {
           select: {
             status: true,
             type: true,
+            needsReview: true,
           },
         },
       },
@@ -68,7 +69,11 @@ export async function GET() {
     // Enrich with pending review count per project
     const enriched = projects.map((p) => {
       const pendingCount = p.documents.filter(
-        (d) => d.status === "PENDING" || d.status === "REVIEWING" || d.status === "REVIEWED"
+        (d) =>
+          d.needsReview ||
+          d.status === "PENDING" ||
+          d.status === "REVIEWING" ||
+          d.status === "REVIEWED"
       ).length
 
       const srsCount = p.documents.filter(d => d.type === "SRS").length

@@ -3,6 +3,19 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import type { DashboardStats } from "@/types";
 
+type RecentReviewRow = {
+  id: string;
+  isApproved: boolean;
+  createdAt: Date;
+  document: {
+    name: string;
+    type: DashboardStats["recentReviews"][number]["documentType"];
+    project: {
+      name: string;
+    };
+  };
+};
+
 export async function GET() {
   try {
     const session = await auth();
@@ -37,7 +50,10 @@ export async function GET() {
       prisma.document.count({
         where: {
           project: { advisorId },
-          status: { in: ["PENDING", "REVIEWING", "REVIEWED"] },
+          OR: [
+            { needsReview: true },
+            { status: { in: ["PENDING", "REVIEWING", "REVIEWED"] } },
+          ],
         },
       }),
 
@@ -80,7 +96,7 @@ export async function GET() {
       totalStudents,
       pendingReviews,
       approvedDocuments,
-      recentReviews: recentReviews.map((r: any) => ({
+      recentReviews: (recentReviews as RecentReviewRow[]).map((r) => ({
         id: r.id,
         documentName: r.document.name,
         documentType: r.document.type,

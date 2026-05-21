@@ -1,5 +1,35 @@
 import { google } from "googleapis";
+import {
+  ReviewProviderUnavailableError,
+  isReviewProviderConfigured,
+  ocrImageWithDeepSeek,
+} from "@/lib/ai";
 import type { DriveFile } from "@/types";
+
+const GOOGLE_DOC_MIME = "application/vnd.google-apps.document";
+const GOOGLE_SHEET_MIME = "application/vnd.google-apps.spreadsheet";
+const GOOGLE_SLIDE_MIME = "application/vnd.google-apps.presentation";
+const PDF_MIME = "application/pdf";
+const DOCX_MIME =
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+const XLSX_MIME =
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+const XLS_MIME = "application/vnd.ms-excel";
+const PPTX_MIME =
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+const IMAGE_MIME_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
+
+export type ExtractedFileText = {
+  text: string;
+  method:
+    | "GOOGLE_EXPORT"
+    | "PDF_TEXT"
+    | "DOCX"
+    | "XLSX"
+    | "CSV"
+    | "TEXT"
+    | "DEEPSEEK_OCR";
+};
 
 // ─────────────────────────────────────────────
 // Auth — Service Account
@@ -53,6 +83,45 @@ export async function listFilesInFolder(
 }
 
 // ─────────────────────────────────────────────
+// List every file visible to the service account.
+// Useful for diagnostics and future project-free import flows.
+// ─────────────────────────────────────────────
+export async function listAllAccessibleFiles(): Promise<DriveFile[]> {
+  const drive = getDriveClient();
+  const allFiles: DriveFile[] = [];
+  let pageToken: string | undefined;
+
+  do {
+    const response = await drive.files.list({
+      pageSize: 100,
+      includeItemsFromAllDrives: true,
+      supportsAllDrives: true,
+      fields:
+        "nextPageToken, files(id, name, mimeType, webViewLink, createdTime, modifiedTime)",
+      pageToken,
+    });
+
+    const files = response.data.files ?? [];
+    allFiles.push(
+      ...files
+        .filter((f) => f.id && f.name && f.mimeType)
+        .map((f) => ({
+          id: f.id!,
+          name: f.name!,
+          mimeType: f.mimeType!,
+          webViewLink: f.webViewLink ?? null,
+          createdTime: f.createdTime ?? null,
+          modifiedTime: f.modifiedTime ?? null,
+        })),
+    );
+
+    pageToken = response.data.nextPageToken ?? undefined;
+  } while (pageToken);
+
+  return allFiles;
+}
+
+// ─────────────────────────────────────────────
 // Download raw file bytes from Drive
 // ─────────────────────────────────────────────
 async function downloadFileBytes(fileId: string): Promise<Buffer> {
@@ -69,51 +138,99 @@ async function downloadFileBytes(fileId: string): Promise<Buffer> {
 // ─────────────────────────────────────────────
 // Export a Google Doc as plain text
 // ─────────────────────────────────────────────
-async function exportGoogleDocAsText(fileId: string): Promise<string> {
+async function exportGoogleFileAsText(fileId: string, mimeType: string): Promise<string> {
   const drive = getDriveClient();
+  const exportMimeType =
+    mimeType === GOOGLE_SHEET_MIME ? "text/csv" : "text/plain";
 
   const response = await drive.files.export(
-    { fileId, mimeType: "text/plain" },
+    { fileId, mimeType: exportMimeType },
     { responseType: "arraybuffer" },
   );
 
   return Buffer.from(response.data as ArrayBuffer).toString("utf-8");
 }
 
+function normalizeWhitespace(text: string): string {
+  return text
+    .replace(/\r\n/g, "\n")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function looksLikeOppm(filename?: string, text?: string): boolean {
+  const source = `${filename ?? ""}\n${text ?? ""}`.toUpperCase();
+  return (
+    source.includes("OPPM") ||
+    source.includes("ONE PAGE PROJECT") ||
+    source.includes("ONE-PAGE PROJECT") ||
+    source.includes("MAJOR TASKS")
+  );
+}
+
+function formatOppmLikeText(text: string): string {
+  const statusMap: Record<string, string> = {
+    "◻": "Not Started",
+    "□": "Not Started",
+    "⚫": "In Progress",
+    "●": "In Progress",
+    "◼": "Complete",
+    "■": "Complete",
+  };
+
+  const lines = normalizeWhitespace(text)
+    .split("\n")
+    .map((line) => {
+      let formatted = line.replace(/\s{2,}/g, " | ").trim();
+
+      for (const [symbol, label] of Object.entries(statusMap)) {
+        formatted = formatted.replaceAll(symbol, label);
+      }
+
+      return formatted;
+    })
+    .filter(Boolean);
+
+  if (lines.length === 0) return "";
+
+  return [
+    "[OPPM structured text]",
+    "Table columns are separated with | where extraction preserved spacing.",
+    "",
+    ...lines,
+  ].join("\n");
+}
+
 // ─────────────────────────────────────────────
 // Extract plain text from a PDF buffer
 // ─────────────────────────────────────────────
-async function extractTextFromPDF(buffer: Buffer): Promise<string> {
-  // Dynamic import to avoid issues in environments where pdf-parse
-  // triggers a test-file read on module load.
-  // Handle both CJS (default export) and ESM (named export) builds.
-  const mod = await import("pdf-parse");
-  const pdfParse =
-    typeof mod === "function"
-      ? mod
-      : ((mod as { default?: unknown }).default ?? mod);
-  if (typeof pdfParse !== "function") {
-    throw new Error("pdf-parse module did not export a callable function.");
-  }
-  const result = await (pdfParse as (buf: Buffer) => Promise<{ text: string }>)(
-    buffer,
-  );
-  return result.text ?? "";
+async function extractTextFromPDF(
+  buffer: Buffer,
+  filename?: string,
+): Promise<string> {
+  const { PDFParse } = await import("pdf-parse");
+  const parser = new PDFParse({ data: buffer });
+  const result = await parser.getText();
+  await parser.destroy();
+  const text = result.text ?? "";
+  return looksLikeOppm(filename, text) ? formatOppmLikeText(text) : normalizeWhitespace(text);
 }
 
 // ─────────────────────────────────────────────
 // Extract plain text from a DOCX buffer
 // ─────────────────────────────────────────────
-async function extractTextFromDOCX(buffer: Buffer): Promise<string> {
+async function extractTextFromDOCX(buffer: Buffer, filename?: string): Promise<string> {
   const mammoth = await import("mammoth");
   const result = await mammoth.extractRawText({ buffer });
-  return result.value ?? "";
+  const text = result.value ?? "";
+  return looksLikeOppm(filename, text) ? formatOppmLikeText(text) : normalizeWhitespace(text);
 }
 
 // ─────────────────────────────────────────────
 // Extract text/CSV from an Excel buffer
 // ─────────────────────────────────────────────
-async function extractTextFromExcel(buffer: Buffer): Promise<string> {
+async function extractTextFromExcel(buffer: Buffer, filename?: string): Promise<string> {
   const xlsx = await import("xlsx");
   const workbook = xlsx.read(buffer, { type: "buffer" });
   let fullText = "";
@@ -124,19 +241,13 @@ async function extractTextFromExcel(buffer: Buffer): Promise<string> {
     const csv = xlsx.utils.sheet_to_csv(sheet);
     fullText += `--- Sheet: ${sheetName} ---\n${csv}\n\n`;
   }
-  return fullText;
+  return looksLikeOppm(filename, fullText)
+    ? formatOppmLikeText(fullText)
+    : normalizeWhitespace(fullText);
 }
 
-// ─────────────────────────────────────────────
-// Export a Google Sheet as CSV
-// ─────────────────────────────────────────────
-async function exportGoogleSheetAsCSV(fileId: string): Promise<string> {
-  const drive = getDriveClient();
-  const response = await drive.files.export(
-    { fileId, mimeType: "text/csv" },
-    { responseType: "arraybuffer" },
-  );
-  return Buffer.from(response.data as ArrayBuffer).toString("utf-8");
+async function extractTextFromPresentation(buffer: Buffer): Promise<string> {
+  return normalizeWhitespace(buffer.toString("utf-8"));
 }
 
 // ─────────────────────────────────────────────
@@ -150,45 +261,97 @@ async function exportGoogleSheetAsCSV(fileId: string): Promise<string> {
 export async function extractTextFromFile(
   fileId: string,
   mimeType: string,
+  filename?: string,
 ): Promise<string> {
-  // Google Docs — export as plain text
-  if (mimeType === "application/vnd.google-apps.document") {
-    return exportGoogleDocAsText(fileId);
+  const result = await extractTextFromFileWithMethod(fileId, mimeType, filename);
+  return result.text;
+}
+
+export async function extractTextFromFileWithMethod(
+  fileId: string,
+  mimeType: string,
+  filename?: string,
+): Promise<ExtractedFileText> {
+  // Google Workspace files — export to text or CSV.
+  if (
+    mimeType === GOOGLE_DOC_MIME ||
+    mimeType === GOOGLE_SHEET_MIME ||
+    mimeType === GOOGLE_SLIDE_MIME
+  ) {
+    const text = await exportGoogleFileAsText(fileId, mimeType);
+    return {
+      text: looksLikeOppm(filename, text)
+        ? formatOppmLikeText(text)
+        : normalizeWhitespace(text),
+      method: "GOOGLE_EXPORT",
+    };
   }
 
-  // Google Sheets — export as CSV
-  if (mimeType === "application/vnd.google-apps.spreadsheet") {
-    return exportGoogleSheetAsCSV(fileId);
-  }
-
-  // Plain text / CSV
+  // Plain text / CSV.
   if (mimeType === "text/plain" || mimeType === "text/csv") {
     const buffer = await downloadFileBytes(fileId);
-    return buffer.toString("utf-8");
+    const text = buffer.toString("utf-8");
+    return {
+      text: looksLikeOppm(filename, text)
+        ? formatOppmLikeText(text)
+        : normalizeWhitespace(text),
+      method: mimeType === "text/csv" ? "CSV" : "TEXT",
+    };
   }
 
-  // PDF
-  if (mimeType === "application/pdf") {
+  if (mimeType === PDF_MIME) {
     const buffer = await downloadFileBytes(fileId);
-    return extractTextFromPDF(buffer);
+    const text = await extractTextFromPDF(buffer, filename);
+    if (text.trim().length >= 50) {
+      return { text, method: "PDF_TEXT" };
+    }
+
+    if (!isReviewProviderConfigured()) {
+      throw new Error(
+        "PDF text extraction found too little readable text, and DeepSeek OCR is not configured.",
+      );
+    }
+
+    const ocrText = await ocrImageWithDeepSeek(buffer, PDF_MIME);
+    return {
+      text: looksLikeOppm(filename, ocrText)
+        ? formatOppmLikeText(ocrText)
+        : normalizeWhitespace(ocrText),
+      method: "DEEPSEEK_OCR",
+    };
   }
 
-  // DOCX
-  if (
-    mimeType ===
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-  ) {
+  if (mimeType === DOCX_MIME) {
     const buffer = await downloadFileBytes(fileId);
-    return extractTextFromDOCX(buffer);
+    return { text: await extractTextFromDOCX(buffer, filename), method: "DOCX" };
   }
 
-  // Excel (XLSX / XLS)
-  if (
-    mimeType === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
-    mimeType === "application/vnd.ms-excel"
-  ) {
+  if (mimeType === XLSX_MIME || mimeType === XLS_MIME) {
     const buffer = await downloadFileBytes(fileId);
-    return extractTextFromExcel(buffer);
+    return { text: await extractTextFromExcel(buffer, filename), method: "XLSX" };
+  }
+
+  if (mimeType === PPTX_MIME) {
+    const buffer = await downloadFileBytes(fileId);
+    return {
+      text: await extractTextFromPresentation(buffer),
+      method: "TEXT",
+    };
+  }
+
+  if (IMAGE_MIME_TYPES.has(mimeType)) {
+    if (!isReviewProviderConfigured()) {
+      throw new ReviewProviderUnavailableError();
+    }
+
+    const buffer = await downloadFileBytes(fileId);
+    const text = await ocrImageWithDeepSeek(buffer, mimeType);
+    return {
+      text: looksLikeOppm(filename, text)
+        ? formatOppmLikeText(text)
+        : normalizeWhitespace(text),
+      method: "DEEPSEEK_OCR",
+    };
   }
 
   throw new Error(
@@ -206,8 +369,8 @@ export function detectDocumentType(
 ): "SRS" | "OPPM" | "UNKNOWN" {
   const upper = filename.toUpperCase();
 
-  if (upper.includes("SRS")) return "SRS";
-  if (upper.includes("OPPM")) return "OPPM";
+  if (/\bSRS\b/.test(upper)) return "SRS";
+  if (/\bOPPM\b/.test(upper)) return "OPPM";
 
   // Fallback: check common full-name variants
   if (
@@ -227,6 +390,10 @@ export function detectDocumentType(
   }
 
   return "UNKNOWN";
+}
+
+export function isReviewCandidateName(filename: string): boolean {
+  return detectDocumentType(filename) !== "UNKNOWN";
 }
 
 // ─────────────────────────────────────────────

@@ -1,14 +1,27 @@
 import type {
   DocumentType,
   DocStatus,
+  DriveSyncStatus,
+  ExtractionMethod,
+  ExtractionStatus,
   FeedbackType,
+  ScanEventType,
   TokenType,
 } from "@/lib/generated/prisma/client";
 
 // ─────────────────────────────────────────────
 // Re-export Prisma enums for convenience
 // ─────────────────────────────────────────────
-export type { DocumentType, DocStatus, FeedbackType, TokenType };
+export type {
+  DocumentType,
+  DocStatus,
+  DriveSyncStatus,
+  ExtractionMethod,
+  ExtractionStatus,
+  FeedbackType,
+  ScanEventType,
+  TokenType,
+};
 
 // ─────────────────────────────────────────────
 // Auth
@@ -100,10 +113,37 @@ export interface DocumentWithReview {
   mimeType: string | null;
   driveUrl: string | null;
   status: DocStatus;
+  driveCreatedTime: Date | null;
+  driveModifiedTime: Date | null;
+  driveLastSeenAt: Date | null;
+  driveLastSyncedAt: Date | null;
+  driveSyncStatus: DriveSyncStatus;
+  needsReview: boolean;
+  reviewCount: number;
+  lastReviewedAt: Date | null;
   projectId: string;
   createdAt: Date;
   updatedAt: Date;
+  extraction: DocumentExtractionSummary | null;
+  scanEvents?: DocumentScanEventSummary[];
   review: ReviewSummary | null;
+}
+
+export interface DocumentExtractionSummary {
+  id: string;
+  status: ExtractionStatus;
+  method: ExtractionMethod;
+  error: string | null;
+  sourceModifiedTime: Date | null;
+  extractedAt: Date | null;
+}
+
+export interface DocumentScanEventSummary {
+  id: string;
+  eventType: ScanEventType;
+  driveModifiedTime: Date | null;
+  message: string | null;
+  createdAt: Date;
 }
 
 // ─────────────────────────────────────────────
@@ -112,6 +152,7 @@ export interface DocumentWithReview {
 export interface ReviewSummary {
   id: string;
   isApproved: boolean;
+  approvedAt: Date | null;
   feedbackType: FeedbackType | null;
   feedback: string | null;
   createdAt: Date;
@@ -185,9 +226,30 @@ export interface DriveFile {
 }
 
 export interface DriveScanResult {
-  newFiles: DriveFile[];
+  newFiles: DocumentWithReview[];
+  modifiedFiles: DocumentWithReview[];
+  unchangedFiles: DocumentWithReview[];
+  skippedFiles: Array<{
+    id: string;
+    name: string;
+    mimeType: string;
+    reason: string;
+  }>;
   totalScanned: number;
+  totalCandidates: number;
   projectId: string;
+  folderId: string;
+  summary: {
+    imported: number;
+    modified: number;
+    unchanged: number;
+    extracted: number;
+    reviewed: number;
+    failed: number;
+    skipped: number;
+    approvedIgnored: number;
+  };
+  message: string;
 }
 
 // ─────────────────────────────────────────────
